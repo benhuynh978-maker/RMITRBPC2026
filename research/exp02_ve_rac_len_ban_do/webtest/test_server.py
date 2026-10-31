@@ -23,6 +23,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -32,9 +33,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 HERE = Path(__file__).resolve().parent
 EXP_DIR = HERE.parent
-SCRATCH = Path(
-    r"C:\Users\ASUS\AppData\Local\Temp\claude\c--Users-ASUS-Desktop-SSC\52bbd2c5-0ffd-43bb-a22e-8c0a29efff56\scratchpad\webtest_be"
-) / "server_test"
+SCRATCH = Path(tempfile.gettempdir()) / "webtest_be" / "server_test"
 if SCRATCH.exists():
     shutil.rmtree(SCRATCH)
 CALIB_DIR = SCRATCH / "calibration"
