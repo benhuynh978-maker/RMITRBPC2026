@@ -1,0 +1,37 @@
+{
+  "_comment": "DEMO DATA - placeholder frames. To use a real photo, set \"image\" to a path under public/ (e.g. \"/img/samples/frame1.jpg\") and replace the polygons. imageSize is the pixel size of the photo; polygon points are [x, y] in photo pixels. ground polygons are [x, y] in metres in the marker-board frame: board centre = (0, 0), +Y = away from the camera along the board's Y axis, +X = right.",
+  "imageSize": { "width": 1280, "height": 720 },
+  "frames": [
+    {
+      "id": "frame-1",
+      "title": "Frame 1: kerb-side drain, light litter",
+      "image": null,
+      "drain": { "blockagePct": 18, "polygon": [[520, 430], [860, 430], [910, 570], [470, 570]] },
+      "trash": [
+        { "id": "t1", "polygon": [[300, 470], [350, 458], [372, 492], [322, 508]], "ground": [[-0.62, 0.55], [-0.5, 0.52], [-0.45, 0.62], [-0.58, 0.66]] },
+        { "id": "t2", "polygon": [[930, 520], [985, 514], [992, 548], [940, 556]], "ground": [[0.58, 0.9], [0.7, 0.89], [0.72, 0.98], [0.6, 1.0]] }
+      ]
+    },
+    {
+      "id": "frame-2",
+      "title": "Frame 2: litter piling at the inlet",
+      "image": null,
+      "drain": { "blockagePct": 56, "polygon": [[500, 420], [840, 420], [900, 580], [440, 580]] },
+      "trash": [
+        { "id": "t1", "polygon": [[520, 455], [640, 440], [676, 520], [540, 548]], "ground": [[-0.2, 0.75], [0.12, 0.72], [0.2, 0.95], [-0.15, 1.0]] },
+        { "id": "t2", "polygon": [[680, 470], [790, 462], [800, 530], [700, 540]], "ground": [[0.25, 0.8], [0.5, 0.78], [0.52, 0.94], [0.28, 0.97]] },
+        { "id": "t3", "polygon": [[380, 520], [440, 510], [452, 556], [392, 566]], "ground": [[-0.6, 1.1], [-0.45, 1.08], [-0.42, 1.2], [-0.57, 1.23]] },
+        { "id": "t4", "polygon": [[870, 590], [940, 584], [950, 628], [880, 636]], "ground": [[0.8, 1.35], [0.98, 1.33], [1.0, 1.46], [0.82, 1.48]] }
+      ]
+    },
+    {
+      "id": "frame-3",
+      "title": "Frame 3: mostly clear, one item",
+      "image": null,
+      "drain": { "blockagePct": 8, "polygon": [[540, 440], [840, 440], [880, 560], [500, 560]] },
+      "trash": [
+        { "id": "t1", "polygon": [[700, 600], [770, 592], [780, 636], [708, 646]], "ground": [[0.3, 1.5], [0.5, 1.48], [0.52, 1.6], [0.32, 1.62]] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta name="robots" content="noindex" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CleanSight — Trash with an address</title>
+    <meta
+      name="description"
+      content="CleanSight maps street litter with computer vision: a fixed camera photographs a drain on a schedule, AI finds litter and drain blockage, and a city map shows where to collect and which drains to clear first."
+    />
+    <meta name="theme-color" content="#0b3b45" />
+    <meta property="og:title" content="CleanSight — Trash with an address" />
+    <meta property="og:description" content="Street-litter mapping with computer vision: collect in the right place, at the right time, and warn early of clogged drains." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+  <noscript>CleanSight needs JavaScript enabled to show this page.</noscript>
+    <!-- Static copy of the survey form so Netlify's build-time form detection finds it.
+         The visible form is rendered by React (src/sections/Involved.jsx) and posts to "/". -->
+    <form name="needs-survey" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="needs-survey" />
+      <p><label>Do not fill: <input name="bot-field" /></label></p>
+      <select name="org-type">
+        <option>Environmental-cleaning company</option>
+        <option>Local government</option>
+        <option>Business/property manager</option>
+        <option>School/campus</option>
+        <option>Researcher</option>
+        <option>Other</option>
+      </select>
+      <input type="text" name="org-name" />
+      <input type="text" name="name" />
+      <input type="email" name="email" />
+      <input type="text" name="area" />
+      <textarea name="problems"></textarea>
+      <input type="radio" name="pilot" value="Yes" />
+      <input type="radio" name="pilot" value="Maybe" />
+      <input type="radio" name="pilot" value="No" />
+      <input type="checkbox" name="consent" value="yes" />
+    </form>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

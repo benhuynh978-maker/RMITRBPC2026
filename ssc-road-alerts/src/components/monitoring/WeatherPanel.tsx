@@ -1,0 +1,10 @@
+import type { WeatherResponse } from '../../models/weather';
+import { formatTime } from './Metrics';
+export function WeatherPanel({data,loading,error,onRefresh,onCamera}:{data:WeatherResponse|null;loading:boolean;error:string;onRefresh:()=>void;onCamera:(id:string)=>void}) {
+  return <section className="observation-detail weather-panel" aria-label="Dự báo mưa 12 giờ"><div className="section-heading"><h2>Dự báo mưa 12 giờ tới</h2><button className="secondary" disabled={loading} onClick={onRefresh}>{loading?'Đang lấy dự báo…':'Cập nhật dự báo'}</button></div>
+    <p className="muted">Vòng xanh đánh dấu 500 m quanh camera có tín hiệu mưa, không phải phạm vi mưa thực. Giờ hiển thị theo múi giờ máy bạn. <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Nguồn: Open-Meteo (CC BY 4.0)</a>.</p>
+    {error&&<p className="notice" role="status">{error}</p>}
+    {!loading&&!data&&!error&&<p>Chưa có camera đã lưu, hoặc bạn đang dùng nguồn mô phỏng. Dự báo thực chỉ lấy cho camera ở nguồn Máy chủ.</p>}
+    {data&&<div className="weather-list">{data.cameras.map(c=><details key={c.camera_id} className="weather-card"><summary>{c.camera_name} — {c.status==='unavailable'?'Không có dự báo':c.status==='stale'?'Dự báo cũ':c.will_rain?'Có tín hiệu mưa':c.will_rain===false?'Chưa dự báo mưa':'Chưa đủ dữ liệu'}{c.status==='partial'?' (thiếu dữ liệu)':''}</summary><button className="text-button" onClick={()=>onCamera(c.camera_id)}>Xem vị trí camera ↗</button><p className="muted">Lấy lúc: {formatTime(c.fetched_at??undefined)} · {c.error??''}</p><div className="forecast-table"><table><thead><tr><th>Khung giờ</th><th>Xác suất giáng thủy</th><th>Mưa + mưa rào</th></tr></thead><tbody>{c.hourly.map(h=><tr key={h.interval_end}><td>{formatTime(h.interval_start)} – {new Date(h.interval_end).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</td><td>{h.probability===null?'Chưa có':`${h.probability}%`}</td><td>{h.rain_mm_per_hour===null?'Chưa có':`${h.rain_mm_per_hour} mm/giờ`}</td></tr>)}</tbody></table></div></details>)}</div>}
+  </section>;
+}

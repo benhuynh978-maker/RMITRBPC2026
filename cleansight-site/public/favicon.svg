@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CleanSight">
+  <rect width="64" height="64" rx="14" fill="#0b3b45"/>
+  <path d="M32 8c-9.4 0-17 7.4-17 16.6C15 37 32 56 32 56s17-19 17-31.4C49 15.4 41.4 8 32 8z" fill="#f4f1e8"/>
+  <path d="M32 17c-4.2 5.2-6.6 8.6-6.6 12.2a6.6 6.6 0 0 0 13.2 0C38.6 25.6 36.2 22.2 32 17z" fill="#0e8a8f"/>
+  <path d="M32 36c0-4 2.4-7.6 7-9.4-.2 4.8-2.6 8.2-7 9.4z" fill="#e0892b"/>
+</svg>

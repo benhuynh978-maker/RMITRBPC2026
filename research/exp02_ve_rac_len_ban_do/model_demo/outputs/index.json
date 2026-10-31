@@ -1,0 +1,24 @@
+{
+  "marker": "marker.geojson",
+  "camera_position": "camera_position.geojson",
+  "images": [
+    {
+      "id": "tphcm2_20260926_181955",
+      "image": "tphcm2_20260926_181955",
+      "model": "tphcm2_20260926_181955_model.geojson",
+      "label": "tphcm2_20260926_181955_label.geojson"
+    },
+    {
+      "id": "ssc6_069",
+      "image": "ssc6_069",
+      "model": "ssc6_069_model.geojson",
+      "label": "ssc6_069_label.geojson"
+    },
+    {
+      "id": "tphcm2_20260926_174928",
+      "image": "tphcm2_20260926_174928",
+      "model": "tphcm2_20260926_174928_model.geojson",
+      "label": "tphcm2_20260926_174928_label.geojson"
+    }
+  ]
+}

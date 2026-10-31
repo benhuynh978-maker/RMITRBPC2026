@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>exp02 / model_demo: Rác từ model AI vs nhãn tay trên bản đồ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+  #map { width: 100%; height: 100vh; }
+  #canh-bao {
+    position: absolute; top: 10px; left: 50px; z-index: 1000;
+    background: #fff3cd; border: 1px solid #ffa502; color: #7a4e00;
+    padding: 8px 14px; border-radius: 6px; font-size: 14px; max-width: 440px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  #dieu-khien {
+    position: absolute; top: 96px; left: 50px; z-index: 1000;
+    background: #fff; border: 1px solid #ccc; padding: 8px 10px; border-radius: 6px;
+    font-size: 13px; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  #dieu-khien select { max-width: 360px; }
+  .chu-thich { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: middle; }
+  #trang-thai {
+    position: absolute; bottom: 10px; left: 50px; z-index: 1000;
+    background: #fff; border: 1px solid #ccc; padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; color: #333; max-width: 640px;
+  }
+</style>
+</head>
+<body>
+<div id="canh-bao">
+  <b>DEMO — pose giả lập không khớp vật lý với ảnh, chỉ thử luồng.</b><br />
+  Pose camera <code>DEMO-CAM</code> lấy từ ảnh giả lập, toạ độ marker là giả định; vùng rác
+  lấy từ ảnh dataset Try1 (model YOLO26s-seg và nhãn tay), khác tỉ lệ khung ảnh hiệu chỉnh (chỉ demo
+  mới cho phép). Không phải vị trí rác thật.
+</div>
+<div id="dieu-khien">
+  <label for="chon-anh"><b>Ảnh:</b></label>
+  <select id="chon-anh"></select>
+  <div style="margin-top:6px">
+    <label><input type="checkbox" id="bat-model" checked />
+      <span class="chu-thich" style="background:#e74c3c"></span>Model (đỏ)</label>
+    &nbsp;
+    <label><input type="checkbox" id="bat-nhan" checked />
+      <span class="chu-thich" style="background:#3498db"></span>Nhãn tay (xanh)</label>
+  </div>
+  <div style="margin-top:6px">
+    <span class="chu-thich" style="background:#2a81cb;border-radius:50%"></span>Bảng đánh dấu
+    &nbsp;
+    <span class="chu-thich" style="background:#2aad27;border-radius:50%"></span>Camera (tính từ hiệu chỉnh)
+  </div>
+</div>
+<div id="map"></div>
+<div id="trang-thai">Đang tải dữ liệu...</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Đường dẫn tương đối: trang này nằm ở model_demo/, dữ liệu ở model_demo/outputs/
+  const OUT = './outputs/';
+  const map = L.map('map').setView([10.7769, 106.7009], 20);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 24, maxNativeZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const trangThai = document.getElementById('trang-thai');
+  const chonAnh = document.getElementById('chon-anh');
+  const batModel = document.getElementById('bat-model');
+  const batNhan = document.getElementById('bat-nhan');
+
+  const STYLE_MODEL = { color: '#c0392b', weight: 2, fillColor: '#e74c3c', fillOpacity: 0.40 };
+  const STYLE_NHAN = { color: '#1f6fb2', weight: 2, dashArray: '5 4', fillColor: '#3498db', fillOpacity: 0.25 };
+
+  let lopModel = null, lopNhan = null, lopMarker = null, lopCamera = null, danhSach = [];
+
+  // File tuỳ chọn: thiếu thì trả null, không ném lỗi
+  function layJsonTuyChon(ten) {
+    return fetch(OUT + ten).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  }
+
+  function veDiem(geojson, mau, ten) {
+    return L.geoJSON(geojson, {
+      pointToLayer: (feature, latlng) =>
+        L.circleMarker(latlng, { radius: 8, color: '#222', weight: 2, fillColor: mau, fillOpacity: 0.95 })
+          .bindTooltip(ten, { permanent: true, direction: 'right', offset: [8, 0] })
+          .bindPopup('<b>' + ten + '</b><br/><small>' + JSON.stringify(feature.properties || {}) + '</small>')
+    }).addTo(map);
+  }
+
+  function layJson(ten) {
+    return fetch(OUT + ten).then(r => {
+      if (!r.ok) throw new Error('Không tải được ' + ten + ' (HTTP ' + r.status + ')');
+      return r.json();
+    });
+  }
+
+  function popupThuocTinh(feature, layer) {
+    const p = feature.properties || {};
+    const conf = (p.confidence === null || p.confidence === undefined) ? 'n/a' : p.confidence;
+    layer.bindPopup(
+      '<b>' + (p.source === 'model' ? 'Model' : 'Nhãn tay') + '</b> #' + p.contour_idx +
+      '<br/>area_px: ' + p.area_px +
+      '<br/>confidence TB: ' + conf +
+      '<br/>số đỉnh: ' + p.n_vertices_px +
+      '<br/><small>' + p.image + '</small>'
+    );
+  }
+
+  function capNhatHienThi() {
+    [[lopModel, batModel], [lopNhan, batNhan]].forEach(([lop, cb]) => {
+      if (!lop) return;
+      if (cb.checked) { if (!map.hasLayer(lop)) lop.addTo(map); }
+      else if (map.hasLayer(lop)) map.removeLayer(lop);
+    });
+    if (lopNhan && map.hasLayer(lopNhan)) lopNhan.bringToBack();
+  }
+
+  function taiAnh(muc) {
+    trangThai.style.color = '#333';
+    trangThai.innerText = 'Đang tải ' + muc.id + '...';
+    Promise.all([layJson(muc.model), layJson(muc.label)]).then(([gjModel, gjNhan]) => {
+      if (lopModel) map.removeLayer(lopModel);
+      if (lopNhan) map.removeLayer(lopNhan);
+      lopModel = L.geoJSON(gjModel, { style: STYLE_MODEL, onEachFeature: popupThuocTinh });
+      lopNhan = L.geoJSON(gjNhan, { style: STYLE_NHAN, onEachFeature: popupThuocTinh });
+      capNhatHienThi();
+
+      let bounds = null;
+      [lopMarker, lopCamera].forEach(l => {
+        if (!l) return;
+        const b = l.getBounds();
+        if (b.isValid()) bounds = bounds ? bounds.extend(b) : b;
+      });
+      [lopModel, lopNhan].forEach(l => {
+        const b = l.getBounds();
+        if (b.isValid()) bounds = bounds ? bounds.extend(b) : b;
+      });
+      if (bounds && bounds.isValid()) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 22 });
+
+      trangThai.innerText = muc.image + ' — model: ' + gjModel.features.length +
+        ' polygon, nhãn tay: ' + gjNhan.features.length + ' polygon';
+    }).catch(baoLoi);
+  }
+
+  function baoLoi(err) {
+    trangThai.innerText = 'LỖI: ' + err.message +
+      ' — hãy chạy model_demo/run_demo_model.py trước, và mở trang qua "python -m http.server" ' +
+      'tại thư mục exp02 (không mở trực tiếp file:// vì fetch() có thể bị chặn).';
+    trangThai.style.color = '#c0392b';
+    console.error(err);
+  }
+
+  layJson('index.json').then(idx => {
+    danhSach = idx.images || [];
+    danhSach.forEach((muc, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = muc.id;
+      chonAnh.appendChild(opt);
+    });
+    // 'camera' là khoá index.json bản cũ (= vị trí marker); camera_position có thể thiếu -> bỏ qua êm
+    return Promise.all([
+      layJsonTuyChon(idx.marker || idx.camera || 'marker.geojson'),
+      layJsonTuyChon(idx.camera_position || 'camera_position.geojson')
+    ]);
+  }).then(([gjMarker, gjCamera]) => {
+    if (gjMarker) lopMarker = veDiem(gjMarker, '#2a81cb', 'Bảng đánh dấu');
+    if (gjCamera) lopCamera = veDiem(gjCamera, '#2aad27', 'Camera (tính từ hiệu chỉnh)');
+    if (!gjCamera) console.warn('Chưa có camera_position.geojson - chạy lại run_demo_model.py để có vị trí camera');
+    if (danhSach.length === 0) throw new Error('index.json không có ảnh nào');
+    taiAnh(danhSach[0]);
+  }).catch(baoLoi);
+
+  chonAnh.addEventListener('change', () => taiAnh(danhSach[Number(chonAnh.value)]));
+  batModel.addEventListener('change', capNhatHienThi);
+  batNhan.addEventListener('change', capNhatHienThi);
+</script>
+</body>
+</html>

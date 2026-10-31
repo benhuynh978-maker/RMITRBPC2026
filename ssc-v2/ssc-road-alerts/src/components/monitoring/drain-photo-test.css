@@ -1,0 +1,32 @@
+/* Gửi ảnh thử và xem kết quả. Tái dùng .secondary, .refresh, .notice, .muted, .observation-image, .image-placeholder từ styles.css / monitoring.css. */
+.dpt{background:#fff;border:1px solid #d8e2e8;border-radius:8px;margin:16px 0;padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.dpt h3{margin:0;font-size:15px;color:#193345}
+.dpt-help{margin:0;font-size:13px;line-height:1.6}
+.dpt-note{margin:0}
+.dpt-pick{display:flex;flex-direction:column;gap:8px;min-width:0}
+.dpt-pick label{font-size:12px;color:#40596a}
+.dpt-pick input[type=file]{font-size:12px;max-width:100%}
+.dpt-thumb{display:block;width:100%;max-width:280px;max-height:200px;object-fit:contain;background:#102f42;border-radius:6px}
+.dpt-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dpt-actions .refresh,.dpt-actions .secondary{min-height:40px}
+.dpt-progress{margin:0}
+.dpt-error{margin:0;padding:8px 12px;background:#fdecef;color:#9f2e3c;border:1px solid #f2c8ce;border-radius:7px;font-size:13px;line-height:1.6}
+
+.dpt-result{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #bfe3cf;background:#f3faf6;border-radius:8px;min-width:0}
+.dpt-result p{margin:0;color:#193345}
+.dpt-method{font-size:12px;color:#1d6b42}
+.dpt-big{font-size:22px;font-weight:600;line-height:1.3}
+.dpt-big-unknown{font-size:14px;font-weight:600;color:#8a5700}
+.dpt-line{font-size:13px}
+.dpt-flag{font-size:13px;font-weight:600;color:#1d6b42}
+.dpt-flag-warn{color:#8a5700}
+.dpt-image{margin-top:4px}
+.dpt-image img{height:auto;max-height:320px}
+.dpt-honest{margin:0}
+
+@media(max-width:480px){
+  .dpt{padding:12px 10px}
+  .dpt-actions .refresh,.dpt-actions .secondary{width:100%}
+  .dpt-big{font-size:19px}
+  .dpt-thumb{max-width:100%}
+}

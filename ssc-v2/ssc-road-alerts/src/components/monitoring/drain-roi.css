@@ -1,0 +1,51 @@
+/* Trình chỉnh vùng miệng cống (ROI). Tái dùng .secondary, .refresh, .notice, .muted từ styles.css / monitoring.css. */
+.roi-editor{background:#fff;border:1px solid #d8e2e8;border-radius:8px;margin:16px 0}
+.roi-editor>summary{padding:14px 16px;cursor:pointer;font-size:14px;font-weight:600;color:#193345}
+.roi-body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.roi-help{font-size:13px;line-height:1.6;margin:0}
+.roi-source{border:1px solid #d8e2e8;border-radius:7px;padding:10px 12px;margin:0;display:flex;flex-direction:column;gap:8px;font-size:13px;min-width:0}
+.roi-source legend{padding:0 6px;font-size:12px;color:#637b87}
+.roi-source label{display:flex;align-items:center;gap:8px}
+.roi-source input[type=file]{font-size:12px;max-width:100%}
+.roi-note{margin:0;flex-wrap:wrap}
+.roi-ack{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.roi-legend{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:#40596a}
+.roi-legend li{display:flex;align-items:center;gap:7px}
+.roi-swatch{display:inline-block;width:26px;height:12px;border-radius:2px;flex-shrink:0}
+.roi-swatch-saved{border:2px dashed #e08a00;background:rgba(224,138,0,.12)}
+.roi-swatch-draft{border:2px solid #0b7fa8;background:rgba(11,127,168,.28)}
+
+.roi-stage{position:relative;width:100%;line-height:0;background:#102f42;border-radius:6px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.roi-stage.is-locked{cursor:default;opacity:.85}
+.roi-img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
+.roi-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;overflow:visible}
+.roi-svg polygon,.roi-svg polyline{stroke-width:2.5px;stroke-linejoin:round}
+.roi-shape-saved{fill:rgba(224,138,0,.12);stroke:#e08a00;stroke-dasharray:8 5}
+.roi-shape-draft{fill:rgba(11,127,168,.28);stroke:#0b7fa8}
+.roi-shape-open{fill:none}
+.roi-handles{position:absolute;inset:0;pointer-events:none}
+.roi-handle{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;touch-action:none;cursor:grab;display:grid;place-items:center;line-height:1}
+.roi-handle span{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #0b7fa8;color:#0b4a63;font-size:10px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.roi-handle.is-selected span{background:#0b7fa8;color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 0 4px #0b7fa8}
+.roi-handle:focus-visible{outline:3px solid #258baf;outline-offset:-2px}
+.roi-empty{padding:28px 14px;border:1px dashed #cddde4;border-radius:7px;text-align:center;font-size:13px;color:#637b87}
+
+.roi-hint,.roi-count{margin:0;font-size:12px}
+.roi-count strong{font-weight:600;color:#193345}
+.roi-errors{margin:0;padding:8px 12px 8px 28px;background:#fdecef;color:#9f2e3c;border:1px solid #f2c8ce;border-radius:7px;font-size:12px;line-height:1.6}
+.roi-error{margin:0;padding:8px 12px;background:#fdecef;color:#9f2e3c;border:1px solid #f2c8ce;border-radius:7px;font-size:12px;line-height:1.6}
+.roi-ok{margin:0;padding:8px 12px;background:#e8f6ee;color:#1d6b42;border:1px solid #bfe3cf;border-radius:7px;font-size:12px;line-height:1.6}
+.roi-toolbar,.roi-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.roi-toolbar .secondary,.roi-actions .secondary,.roi-actions .refresh{min-height:40px}
+.roi-import,.roi-save,.roi-keyform{display:flex;flex-direction:column;gap:8px;min-width:0}
+.roi-import label,.roi-keyform label{font-size:12px;color:#40596a;line-height:1.5}
+.roi-import textarea,.roi-keyform input{width:100%;padding:9px 10px;border:1px solid #cedde5;border-radius:7px;background:#fff;font:12px/1.5 monospace}
+.roi-keyform{padding:12px;border:1px solid #cddde4;border-radius:7px;background:#f4f7f9}
+.roi-confirm{flex-direction:column;align-items:stretch;margin-bottom:0}
+.roi-confirm p{margin:0;color:inherit;font-size:13px;line-height:1.6}
+
+@media(max-width:480px){
+  .roi-body{padding:0 10px 12px}
+  .roi-toolbar,.roi-actions{flex-direction:column;align-items:stretch}
+  .roi-toolbar .secondary,.roi-actions .secondary,.roi-actions .refresh{width:100%}
+}

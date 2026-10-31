@@ -1,0 +1,28 @@
+/* Nav */
+.nav { position: sticky; top: 0; z-index: 500; background: rgba(250, 248, 242, 0.96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; min-height: var(--nav-h); gap: var(--s-3); position: relative; }
+.nav-brand { display: inline-flex; align-items: center; gap: var(--s-2); font-weight: 800; font-size: 1.1rem; color: var(--ink-900); text-decoration: none; letter-spacing: -0.01em; }
+.nav-toggle { display: none; background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); color: var(--ink-900); width: 44px; height: 44px; cursor: pointer; align-items: center; justify-content: center; }
+.nav-links ul { display: flex; gap: var(--s-1); list-style: none; margin: 0; padding: 0; flex-wrap: wrap; justify-content: flex-end; }
+.nav-links a { display: block; padding: 0.4rem 0.65rem; border-radius: var(--r-pill); color: var(--ink-700); text-decoration: none; font-size: var(--fs-sm); font-weight: 600; }
+.nav-links a:hover { background: var(--teal-100); color: var(--ink-900); }
+@media (max-width: 639px) {
+  .nav-toggle { display: inline-flex; }
+  .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-2); padding: var(--s-2) var(--s-4) var(--s-4); }
+  .nav-links.is-open { display: block; }
+  .nav-links ul { flex-direction: column; justify-content: flex-start; }
+  .nav-links a { padding: 0.75rem 0.5rem; font-size: var(--fs-md); border-radius: var(--r-sm); }
+}
+@media (min-width: 640px) and (max-width: 860px) {
+  .nav-links ul { flex-wrap: nowrap; gap: 0; }
+  .nav-brand span { font-size: 1rem; }
+  .nav-links a { padding: 0.35rem 0.28rem; font-size: 0.72rem; white-space: nowrap; }
+}
+
+/* Footer */
+.footer { background: var(--ink-900); color: #cfe0e3; padding: var(--s-7) 0; }
+.footer h2, .footer h3 { color: #fff; }
+.footer a { color: #9fd9de; }
+.footer-grid { display: grid; gap: var(--s-5); }
+@media (min-width: 720px) { .footer-grid { grid-template-columns: 1fr 2fr; } }
+.footer-tiny { font-size: var(--fs-xs); color: #a9c1c6; margin-top: var(--s-5); border-top: 1px solid rgba(255,255,255,0.15); padding-top: var(--s-4); }
