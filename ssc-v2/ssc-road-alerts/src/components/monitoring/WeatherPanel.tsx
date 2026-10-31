@@ -1,0 +1,10 @@
+import type { WeatherResponse } from '../../models/weather';
+import { formatTime } from './Metrics';
+export function WeatherPanel({data,loading,error,onRefresh,onCamera}:{data:WeatherResponse|null;loading:boolean;error:string;onRefresh:()=>void;onCamera:(id:string)=>void}) {
+  return <section className="observation-detail weather-panel" aria-label="Rain forecast (next 12 hours)"><div className="section-heading"><h2>Rain forecast (next 12 hours)</h2><button className="secondary" disabled={loading} onClick={onRefresh}>{loading?'Loading forecast…':'Refresh forecast'}</button></div>
+    <p className="muted">The blue circle marks 500 m around a camera with a rain signal; it is not the actual rain extent. Times use your device time zone. <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Source: Open-Meteo (CC BY 4.0)</a>.</p>
+    {error&&<p className="notice" role="status">{error}</p>}
+    {!loading&&!data&&!error&&<p>No saved cameras, or you are using the simulated source. Real forecasts are only fetched for cameras from the Server source.</p>}
+    {data&&<div className="weather-list">{data.cameras.map(c=><details key={c.camera_id} className="weather-card"><summary>{c.camera_name} — {c.status==='unavailable'?'No forecast':c.status==='stale'?'Stale forecast':c.will_rain?'Rain signal':c.will_rain===false?'No rain forecast':'Not enough data'}{c.status==='partial'?' (partial data)':''}</summary><button className="text-button" onClick={()=>onCamera(c.camera_id)}>View camera location ↗</button><p className="muted">Fetched at: {formatTime(c.fetched_at??undefined)} · {c.error??''}</p><div className="forecast-table"><table><thead><tr><th>Time slot</th><th>Precipitation probability</th><th>Rain + showers</th></tr></thead><tbody>{c.hourly.map(h=><tr key={h.interval_end}><td>{formatTime(h.interval_start)} – {new Date(h.interval_end).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td>{h.probability===null?'n/a':`${h.probability}%`}</td><td>{h.rain_mm_per_hour===null?'n/a':`${h.rain_mm_per_hour} mm/h`}</td></tr>)}</tbody></table></div></details>)}</div>}
+  </section>;
+}

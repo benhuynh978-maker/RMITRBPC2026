@@ -1,0 +1,40 @@
+{
+  "roads": [
+    {
+      "severity": "normal",
+      "road_id": "ROAD-01",
+      "road_name": "Tuyến Ngã 4",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.7112,
+            10.7874
+          ],
+          [
+            106.7132,
+            10.7886
+          ]
+        ]
+      }
+    },
+    {
+      "severity": "normal",
+      "road_id": "ROAD-CAM0001",
+      "road_name": "Tuyen camera ESP32 thuc te",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.7112,
+            10.7874
+          ],
+          [
+            106.7132,
+            10.7886
+          ]
+        ]
+      }
+    }
+  ]
+}

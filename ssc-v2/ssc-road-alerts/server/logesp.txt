@@ -1,0 +1,155 @@
+AT
+OK
+AT+CPIN?
++CPIN: READY
+
+OK
+AT+CGDCONT?
++CGDCONT: 1,"IP","m-wap","10.102.1.233",0,0,,,,
+
+OK
+���AT+CGACT?
++CGACT: 1,1
+
+OK
+����������AT+CGPADDR
++CGPADDR: 1,10.102.1.233
+
+OK
+��CGDCONTAT+NETOPEN
+OK
+
++NETOPEN: 0
+����AT+CNTP="time.cloudflare.com",0
+OK
+�AT+CNTP
+OK
+
+*ATREADY: 1
+����
++CPIN: READY
+
+*ATREADY: 1
+�����
++CPIN: READY
+����
+*ATREADY: 1
+����_�����
++CPIN: READY
+�������
+*ATREADY: 1
+��?���
++CPIN: READY
+�����
+*ATREADY: 1
+
++CPIN: READY
+��
+SMS DONE
+
++CGEV: NW PDN ACT 1
+
+PB DONE
+��ݹ��сdetector was triggered
+
+
+ets Jul 29 2019 12:21:46
+
+rst:0x3 (SW_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:4876
+ho 0 tail 12 room 4
+load:0x40078000,len:16532
+load:0x40080400,len:3500
+entry 0x400805b4
+Serial Monitor: 115200 baud, Both NL & CR.
+Gui tung lenh, cho OK/ERROR roi gui lenh tiep:
+AT
+AT+CPIN?
+AT+CGDCONT?
+AT+CGACT?
+AT+CGPADDR
+CGDCONT doc cau hinh da luu, khong dam bao APN dung voi SIM hien tai.
+
+*ATREADY: 1
+
++CPIN: READY
+
+*ATREADY: 1
+�����_
++CPIN: READY
+��
+*ATREADY: 1
+��
++CPIN: READY
+
+*ATREADY: 1
+��
++CPIN: READY
+
+*ATREADY: 1
+����~�
++CPIN: READY
+��
+*ATREADY: 1
+
++CPIN: READY
+�
+*ATREADY: 1
+
++CPIN: READY
+��
+*ATREADY: 1
+�
++CPIN: READY
+�����
+*ATREADY: 1
+
++CPIN: READY
+AT
+OK
+���
+*ATREADY: 1
+�
++CPIN: READY
+
+*ATREADY: 1
+���
++CPIN: READY
+����
+*ATREADY: 1
+
++CPIN: READY
+��
+*ATREADY: 1
+
++CPIN: READY
+
+*ATREADY: 1
+�
++CPIN: READY
+
+*ATREADY: 1
+
++CPIN: READY
+
+SMS DONE
+
++CGEV: NW PDN ACT 1
+���
+PB DONE
+AT
+OK
+AT+NETOPEN
+OK
+
++NETOPEN: 0
+�AT+CNTP="pool.ntp.org",0 AT+CNTP
+ERROR
+���������������AT+CNTP="pool.ntp.org",0 
+OK
+�AT+CNTP
+OK
+���

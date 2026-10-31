@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>Demo: Vẽ rác lên bản đồ (exp02)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+  #map { width: 100%; height: 100vh; }
+  #canh-bao {
+    position: absolute; top: 10px; left: 50px; z-index: 1000;
+    background: #fff3cd; border: 1px solid #ffa502; color: #7a4e00;
+    padding: 8px 14px; border-radius: 6px; font-size: 14px; max-width: 460px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  #chu-thich-diem {
+    position: absolute; top: 10px; right: 10px; z-index: 1000;
+    background: #fff; border: 1px solid #ccc; padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; color: #333; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .ct { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: middle; border-radius: 50%; }
+  #trang-thai {
+    position: absolute; bottom: 10px; left: 50px; z-index: 1000;
+    background: #fff; border: 1px solid #ccc; padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; color: #333; max-width: 640px;
+  }
+</style>
+</head>
+<body>
+<div id="canh-bao">
+  <b>DEMO</b> — toạ độ giả định, không phải vị trí thật. Dữ liệu sinh ra từ
+  <code>run_demo_vehtruong.py</code>: ảnh cảnh đường lấy từ dataset (nhãn tay lớp Trash) nhưng pose
+  camera lấy từ <b>ảnh giả lập</b>, nên vị trí rác trên bản đồ KHÔNG phản ánh hiện trường thật. Ảnh dataset
+  khác tỉ lệ khung ảnh hiệu chỉnh (chỉ demo mới cho phép). Chỉ để kiểm tra luồng xử lý.
+</div>
+<div id="chu-thich-diem">
+  <div><span class="ct" style="background:#2a81cb"></span>Bảng đánh dấu (marker)</div>
+  <div><span class="ct" style="background:#2aad27"></span>Camera (tính từ hiệu chỉnh)</div>
+  <div><span class="ct" style="background:#e74c3c"></span>Vùng rác (nhãn tay)</div>
+</div>
+<div id="map"></div>
+<div id="trang-thai">Đang tải dữ liệu...</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([10.7769, 106.7009], 18);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 22,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const trangThai = document.getElementById('trang-thai');
+  let bounds = null;
+
+  function morong(layer) {
+    const b = layer.getBounds();
+    if (b && b.isValid()) bounds = bounds ? bounds.extend(b) : b;
+  }
+
+  // Tải JSON; trả null (không ném lỗi) nếu thiếu file - dùng cho file tuỳ chọn
+  function taiTuyChon(duongDan) {
+    return fetch(duongDan).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  }
+
+  function taiBatBuoc(duongDan) {
+    return fetch(duongDan).then(r => {
+      if (!r.ok) throw new Error('Không tải được ' + duongDan + ' (HTTP ' + r.status + ')');
+      return r.json();
+    });
+  }
+
+  function veVungRac(geojson) {
+    const layer = L.geoJSON(geojson, {
+      style: { color: '#c0392b', weight: 2, fillColor: '#e74c3c', fillOpacity: 0.45 }
+    }).addTo(map);
+    morong(layer);
+    return layer;
+  }
+
+  // Điểm tròn có nhãn: ten hiển thị cố định bên cạnh điểm + popup thuộc tính
+  function veDiem(geojson, mau, ten) {
+    const layer = L.geoJSON(geojson, {
+      pointToLayer: (feature, latlng) =>
+        L.circleMarker(latlng, { radius: 8, color: '#222', weight: 2, fillColor: mau, fillOpacity: 0.95 })
+          .bindTooltip(ten, { permanent: true, direction: 'right', offset: [8, 0] })
+          .bindPopup('<b>' + ten + '</b><br/><small>' +
+            JSON.stringify(feature.properties || {}) + '</small>')
+    }).addTo(map);
+    morong(layer);
+    return layer;
+  }
+
+  Promise.all([
+    taiBatBuoc('../outputs/demo_rac.geojson'),
+    taiTuyChon('../outputs/demo_marker.geojson'),
+    taiTuyChon('../outputs/demo_camera_position.geojson'),
+    taiTuyChon('../outputs/demo_camera.geojson')   // tên cũ (= vị trí marker), chỉ dùng nếu chưa có demo_marker
+  ]).then(([rac, marker, camera, cameraCu]) => {
+    veVungRac(rac);
+    const ghiChu = ['demo_rac.geojson'];
+
+    const markerDung = marker || cameraCu;
+    if (markerDung) {
+      veDiem(markerDung, '#2a81cb', 'Bảng đánh dấu');
+      ghiChu.push(marker ? 'demo_marker.geojson' : 'demo_camera.geojson (tên cũ = vị trí bảng đánh dấu)');
+    } else {
+      ghiChu.push('THIẾU vị trí bảng đánh dấu');
+    }
+    if (camera) {
+      veDiem(camera, '#2aad27', 'Camera (tính từ hiệu chỉnh)');
+      ghiChu.push('demo_camera_position.geojson');
+    } else {
+      ghiChu.push('chưa có demo_camera_position.geojson (chạy lại run_demo_vehtruong.py để có vị trí camera)');
+    }
+
+    if (bounds && bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 20 });
+    }
+    trangThai.innerText = 'Đã tải: ' + ghiChu.join(' + ');
+  }).catch(err => {
+    trangThai.innerText = 'LỖI: ' + err.message +
+      ' - hãy chạy run_demo_vehtruong.py trước, và mở trang này qua "python -m http.server" ' +
+      '(không mở trực tiếp file:// vì fetch() có thể bị chặn CORS).';
+    trangThai.style.color = '#c0392b';
+    console.error(err);
+  });
+</script>
+</body>
+</html>

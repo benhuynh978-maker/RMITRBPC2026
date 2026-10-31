@@ -1,0 +1,21 @@
+@base = http://localhost:8000
+@aiKey =
+@cameraId = CAM-001
+
+### Báo cáo AI bốn trường (camera phải tồn tại và đã gắn tuyến)
+POST {{base}}/api/ai/reports
+Content-Type: application/json
+X-API-Key: {{aiKey}}
+
+{
+  "waste_level": "high",
+  "flood_percentage": 65,
+  "image_url": "https://example.com/replace-with-real-result.jpg",
+  "camera_id": "{{cameraId}}"
+}
+
+### Dự báo mưa 12 giờ cho tất cả camera đã lưu
+GET {{base}}/api/weather/cameras
+
+### Xem số liệu camera cập nhật từ AI
+GET {{base}}/api/cameras/{{cameraId}}

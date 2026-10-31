@@ -1,0 +1,11 @@
+﻿pose,vat,ly_do
+GAN-v1,cn_0.3x1.0_doc@d1_a-0.8,ngoai_khung_hinh
+GAN-v2,cn_0.3x1.0_doc@d1_a+0.8,ngoai_khung_hinh
+GAN-v4,cn_0.3x1.0_doc@d1_a+0.8,ngoai_khung_hinh
+XA-v0,cn_0.3x1.0_doc@d2_a+0,ngoai_khung_hinh
+XA-v1,cn_0.3x1.0_doc@d2_a+0,ngoai_khung_hinh
+XA-v2,cn_0.3x1.0_doc@d2_a+0,ngoai_khung_hinh
+XA-v3,cn_0.3x1.0_doc@d2_a+0,ngoai_khung_hinh
+XA-v3,cn_0.3x1.0_doc@d8_a+0,ngoai_khung_hinh
+XA-v3,hop_0.3x0.3_cao0.2@d8_a+0,ngoai_khung_hinh
+XA-v4,cn_0.3x1.0_doc@d2_a+0,ngoai_khung_hinh

@@ -1,0 +1,79 @@
+/* CleanSight design tokens. Light theme only. */
+:root {
+  /* Brand */
+  --ink-900: #0b2a31;
+  --ink-800: #0b3b45;
+  --ink-700: #1f4f5a;
+  --ink-600: #3c6670;
+  --ink-500: #5b7f88;
+  --teal-600: #0e7480;
+  --teal-500: #12909a;
+  --teal-100: #d8eef0;
+  --teal-50: #eaf6f7;
+  --sand-100: #f4f1e8;
+  --sand-50: #faf8f2;
+  --white: #ffffff;
+  --line: #d6e0e2;
+  --line-strong: #b5c6c9;
+  --text: #15303a;
+  --text-muted: #44616a; /* >= 4.5:1 on white and sand */
+
+  /* Warm accent (calls to action) */
+  --accent: #e0892b;
+  --accent-strong: #b25d00; /* AA on white for text */
+  --accent-100: #fbecd6;
+
+  /* Alert palette (Okabe-Ito based, colour-blind friendly). Always paired with text/shape. */
+  --alert-low: #0072b2;
+  --alert-low-bg: #dcecf6;
+  --alert-low-text: #00507d;
+  --alert-watch: #e69f00;
+  --alert-watch-bg: #fbeccb;
+  --alert-watch-text: #6e4900;
+  --alert-high: #d55e00;
+  --alert-high-bg: #f9dcc7;
+  --alert-high-text: #8a3b00;
+
+  /* Verdicts */
+  --ok: #00695c;
+  --ok-bg: #d6efe9;
+  --warn: #6e4900;
+  --warn-bg: #fbeccb;
+  --bad: #8a3b00;
+  --bad-bg: #f9dcc7;
+
+  /* Spacing */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4.5rem;
+  --s-9: 6rem;
+
+  /* Radius & shadows */
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+  --shadow-1: 0 1px 2px rgba(11, 42, 49, 0.08), 0 1px 1px rgba(11, 42, 49, 0.04);
+  --shadow-2: 0 6px 20px rgba(11, 42, 49, 0.1), 0 2px 4px rgba(11, 42, 49, 0.05);
+
+  /* Type */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.9rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.15rem;
+  --fs-xl: clamp(1.4rem, 1.1rem + 1.2vw, 1.8rem);
+  --fs-2xl: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+  --fs-3xl: clamp(2.2rem, 1.5rem + 3.4vw, 3.6rem);
+  --lh-tight: 1.2;
+  --lh-body: 1.6;
+
+  --maxw: 1120px;
+  --nav-h: 56px;
+}

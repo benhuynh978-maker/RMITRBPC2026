@@ -1,0 +1,26 @@
+# Ignore everything by default
+/*
+
+# Explicitly allow the specified folders
+!/cleansight-site/
+!/cleansight-site-v2/
+!/research/
+!/ssc-v2/
+!/ssc-road-alerts/
+!/test-WebUI-modelAI/
+!/.gitignore
+
+# Inside those folders, ignore common large/unnecessary files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.venv/
+**/node_modules/
+**/.env
+**/*.log
+**/runs/
+**/*.pt
+**/*.onnx
+**/*.weights
+**/.DS_Store
+**/Thumbs.db

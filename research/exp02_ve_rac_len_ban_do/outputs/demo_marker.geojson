@@ -1,0 +1,16 @@
+{
+  "type": "Feature",
+  "properties": {
+    "camera_id": "DEMO-CAM",
+    "source": "synthetic",
+    "role": "marker",
+    "label": "Vị trí bảng đánh dấu"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      106.7009,
+      10.7769
+    ]
+  }
+}

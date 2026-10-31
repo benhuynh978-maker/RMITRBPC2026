@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "camera_id": "DEMO-CAM",
+    "source": "synthetic",
+    "role": "camera",
+    "label": "Camera (tính từ hiệu chỉnh)",
+    "east_m": -2.0596234392329443e-05,
+    "north_m": -2.0111242612010827,
+    "height_m": 1.4886125730198798
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      106.70089999981167,
+      10.776881933763379
+    ]
+  }
+}

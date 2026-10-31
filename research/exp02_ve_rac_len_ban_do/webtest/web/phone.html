@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Trash-on-map test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; font-size: 17px; color: #1b1f24; background: #eef1f5; -webkit-text-size-adjust: 100%; }
+  body { padding: 12px 12px 40px 12px; max-width: 640px; margin: 0 auto; }
+  h1 { margin: 4px 0 8px 0; font-size: 21px; }
+  #status { padding: 10px 12px; border-radius: 8px; font-weight: 700; font-size: 16px; background: #ffe9b5; color: #6b4600; }
+  #status.ok { background: #d4f5dd; color: #0b5a22; }
+  #status.bad { background: #ffd9d6; color: #8a1108; }
+  #remind { margin: 10px 0; padding: 10px 12px; font-size: 15px; background: #fff3c4; border: 1px solid #e6c34f; border-radius: 8px; color: #5a3b00; }
+
+  .card { background: #fff; border: 1px solid #c7ced8; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 8px 0; font-size: 17px; color: #334155; }
+  button.big { display: block; width: 100%; min-height: 64px; padding: 12px; font-size: 19px; font-weight: 700; color: #fff; background: #2563eb; border: 0; border-radius: 12px; }
+  button.big.green { background: #15803d; }
+  button.big:disabled { background: #9aa6b8; }
+  button.big:active:not(:disabled) { filter: brightness(0.85); }
+  button.link { display: block; width: 100%; margin-top: 6px; padding: 12px 4px; font-size: 15px; color: #1d4ed8; background: none; border: 0; text-decoration: underline; }
+  button.link:disabled { color: #9aa6b8; }
+  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+
+  .prog { display: none; margin-top: 10px; }
+  .prog.show { display: block; }
+  .bar { height: 14px; background: #dbe2ec; border-radius: 7px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: #2563eb; transition: width 0.15s; }
+  .bar.busy > div { width: 100% !important; background: repeating-linear-gradient(45deg, #2563eb, #2563eb 12px, #5b8def 12px, #5b8def 24px); background-size: 34px 34px; animation: chay 0.8s linear infinite; }
+  @keyframes chay { to { background-position: 34px 0; } }
+  .prog .tx { margin-top: 4px; font-size: 15px; font-weight: 600; }
+
+  .msg { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 16px; }
+  .msg.err { background: #ffe3e0; color: #8a1108; border: 1px solid #f1a29b; }
+  .msg.ok { background: #dff6e6; color: #0b5a22; border: 1px solid #9ad3ac; }
+  .msg.warn { background: #fff3c4; color: #6b4600; border: 1px solid #e6c34f; }
+  .msg.info { background: #e6effd; color: #17408b; border: 1px solid #a9c3f0; }
+  #res-img { display: block; width: 100%; margin-top: 10px; border: 1px solid #8a94a3; border-radius: 6px; }
+  .big-num { font-size: 18px; font-weight: 700; margin-top: 10px; line-height: 1.5; }
+  .timing { font-size: 15px; font-weight: 400; margin-top: 6px; color: #334155; }
+
+  #code-box { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(15,23,42,0.75); align-items: center; justify-content: center; padding: 16px; }
+  #code-box.show { display: flex; }
+  #code-card { width: 100%; max-width: 340px; background: #fff; border-radius: 12px; padding: 18px; }
+  #code-card h3 { margin: 0 0 6px 0; font-size: 19px; }
+  #code-in { width: 100%; padding: 12px; font-size: 28px; letter-spacing: 8px; text-align: center; border: 2px solid #8a94a3; border-radius: 8px; }
+  #code-err { min-height: 22px; margin: 6px 0; color: #b42318; font-weight: 700; font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>Trash-on-map test</h1>
+<div id="status">Laptop: checking…</div>
+<div id="remind">Keep the phone in the same position and orientation (portrait/landscape) as for the calibration photo.</div>
+
+<div class="card">
+  <h2>Step 1: calibration photo</h2>
+  <button class="big" id="b-calib" type="button">📷 Take calibration photo (with board)</button>
+  <button class="link" id="l-calib" type="button">or pick an existing photo</button>
+  <input type="file" id="i-calib-cam" accept="image/*" capture="environment" />
+  <input type="file" id="i-calib-file" accept="image/*" />
+  <div class="prog" id="p-calib"><div class="bar" id="bar-calib"><div></div></div><div class="tx" id="tx-calib"></div></div>
+  <div id="m-calib"></div>
+</div>
+
+<div class="card">
+  <h2>Step 2: trash photo</h2>
+  <button class="big green" id="b-obs" type="button">📷 Take trash photo</button>
+  <button class="link" id="l-obs" type="button">or pick an existing photo</button>
+  <input type="file" id="i-obs-cam" accept="image/*" capture="environment" />
+  <input type="file" id="i-obs-file" accept="image/*" />
+  <div class="prog" id="p-obs"><div class="bar" id="bar-obs"><div></div></div><div class="tx" id="tx-obs"></div></div>
+  <div id="m-obs"></div>
+  <div id="res" style="display:none">
+    <div class="big-num" id="res-sum"></div>
+    <div id="res-warn"></div>
+    <img id="res-img" alt="Model output with trash regions outlined" />
+  </div>
+</div>
+
+<div id="code-box">
+  <form id="code-card" autocomplete="off">
+    <h3>Enter access code</h3>
+    <div style="font-size:15px;color:#4a5565">6-digit code shown on the server (laptop) screen.</div>
+    <input id="code-in" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" />
+    <div id="code-err"></div>
+    <button type="submit" class="big">Confirm</button>
+  </form>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const MSG_MANG = 'Cannot reach the laptop. Check that Tailscale is on, on this phone.';
+const MSG_QUA_HAN = 'Timed out (120 s). Please try again.';
+const TIMEOUT_MS = 120000;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function showMsg(id, kind, text) {
+  $(id).innerHTML = text ? '<div class="msg ' + kind + '">' + esc(text) + '</div>' : '';
+}
+function fmtNum(v, nd) {
+  return (typeof v === 'number' && isFinite(v)) ? v.toLocaleString('en-GB', { maximumFractionDigits: nd }) : '?';
+}
+function errText(r) {
+  if (r.data && typeof r.data.error === 'string' && r.data.error) return r.data.error;
+  if (r.status === 409) return 'Laptop is not calibrated. Send a board photo first (HTTP 409).';
+  if (r.status === 422) return 'The photo does not fit the current calibration (HTTP 422).';
+  if (r.status === 413) return 'Photo too large (HTTP 413).';
+  return 'Server error (HTTP ' + r.status + ').';
+}
+
+// ====== Mã truy cập (header X-Access-Code, lưu ở localStorage khoá webtest_code) ======
+const MA_KEY = 'webtest_code';
+let accessCode = '';   // bản trong bộ nhớ (vẫn chạy khi localStorage ném lỗi)
+function luuMa(c) { accessCode = c; try { localStorage.setItem(MA_KEY, c); } catch (e) { /* bỏ qua */ } }
+function xoaMa() { accessCode = ''; try { localStorage.removeItem(MA_KEY); } catch (e) { /* bỏ qua */ } }
+(function () {
+  const m = /^#(\d{6})$/.exec(location.hash);
+  if (m) {
+    luuMa(m[1]);
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* bỏ qua */ }
+  } else {
+    try { accessCode = localStorage.getItem(MA_KEY) || ''; } catch (e) { accessCode = ''; }
+  }
+})();
+let maCho = null, maXong = null;
+function hoiMa(loi) {
+  if (!maCho) {
+    maCho = new Promise((resolve) => { maXong = resolve; });
+    $('code-in').value = '';
+    $('code-err').textContent = loi || '';
+    $('code-box').classList.add('show');
+    setTimeout(() => $('code-in').focus(), 50);
+  } else if (loi) {
+    $('code-err').textContent = loi;
+  }
+  return maCho;
+}
+$('code-card').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const v = $('code-in').value.trim();
+  if (!/^\d{6}$/.test(v)) { $('code-err').textContent = 'The code must be exactly 6 digits.'; return; }
+  luuMa(v);
+  $('code-box').classList.remove('show');
+  const xong = maXong; maCho = null; maXong = null;
+  if (xong) xong();
+});
+
+// Một lần gửi POST bằng XHR (có tiến độ tải lên). Trả {status, data}; lỗi mạng/quá giờ ném Error.
+function xhrMotLan(path, fd, ma, onTien, onTaiXong) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', path);
+    x.timeout = TIMEOUT_MS;
+    x.setRequestHeader('X-Access-Code', ma);
+    x.upload.onprogress = (e) => { if (e.lengthComputable) onTien(Math.min(100, Math.round(e.loaded * 100 / e.total))); };
+    let tBat = 0, tTaiXong = 0;   // mốc thời gian đo bằng đồng hồ điện thoại (ms)
+    x.upload.onload = () => { tTaiXong = performance.now(); onTaiXong(); };
+    x.onload = () => {
+      const tXong = performance.now();
+      let data = null;
+      try { data = JSON.parse(x.responseText); } catch (e) { data = null; }
+      const doGio = { tong_ms: tXong - tBat, tai_len_ms: tTaiXong ? tTaiXong - tBat : null,
+        cho_ket_qua_ms: tTaiXong ? tXong - tTaiXong : null };
+      resolve({ status: x.status, data: data, doGio: doGio });
+    };
+    x.onerror = () => reject(new Error(MSG_MANG));
+    x.ontimeout = () => reject(new Error(MSG_QUA_HAN));
+    x.onabort = () => reject(new Error('Upload cancelled.'));
+    tBat = performance.now();
+    x.send(fd);
+  });
+}
+// Gửi có xử lý mã truy cập: thiếu mã / 401 thì hỏi mã rồi gửi lại
+async function guiXHR(path, fd, onTien, onTaiXong) {
+  for (;;) {
+    let used = accessCode;
+    if (!used) { await hoiMa(''); used = accessCode; }
+    onTien(0);
+    const r = await xhrMotLan(path, fd, used, onTien, onTaiXong);
+    if (r.status === 401) {
+      if (accessCode === used) { xoaMa(); await hoiMa('Wrong code'); }
+      continue;
+    }
+    return r;
+  }
+}
+// GET JSON bằng fetch (cho /api/status)
+async function layJSON(path) {
+  for (;;) {
+    let used = accessCode;
+    if (!used) { await hoiMa(''); used = accessCode; }
+    let resp;
+    try { resp = await fetch(path, { headers: { 'X-Access-Code': used } }); }
+    catch (e) { throw new Error(MSG_MANG); }
+    if (resp.status === 401) {
+      if (accessCode === used) { xoaMa(); await hoiMa('Wrong code'); }
+      continue;
+    }
+    let data = null;
+    try { data = await resp.json(); } catch (e) { data = null; }
+    return { status: resp.status, data: data };
+  }
+}
+
+// ====== Trạng thái laptop ======
+async function napTrangThai() {
+  const el = $('status');
+  try {
+    const r = await layJSON('/api/status');
+    if (r.status === 200 && r.data && r.data.ok) {
+      if (r.data.calibrated) { el.className = 'ok'; el.textContent = 'Laptop: calibrated ✔'; }
+      else { el.className = 'bad'; el.textContent = 'Laptop: NOT calibrated. Send a board photo first'; }
+    } else {
+      el.className = 'bad'; el.textContent = 'Laptop: ' + errText(r);
+    }
+  } catch (e) {
+    el.className = 'bad'; el.textContent = e.message;
+  }
+}
+
+// ====== Gửi ảnh ======
+let dangGui = false;
+const NUT = ['b-calib', 'l-calib', 'b-obs', 'l-obs'];
+function khoaNut(khoa) { NUT.forEach((id) => { $(id).disabled = khoa; }); }
+
+function hienTienDo(kind, pct, text, dangXuLy) {
+  $('p-' + kind).classList.add('show');
+  $('bar-' + kind).classList.toggle('busy', !!dangXuLy);
+  $('bar-' + kind).firstElementChild.style.width = pct + '%';
+  $('tx-' + kind).textContent = text;
+}
+function anTienDo(kind) { $('p-' + kind).classList.remove('show'); }
+
+// Gửi một ảnh. kind: 'calib' -> /api/inbox ; 'obs' -> /api/observe
+async function guiAnh(kind, file) {
+  if (!file || dangGui) return;
+  dangGui = true;
+  khoaNut(true);
+  showMsg('m-' + kind, '', '');
+  if (kind === 'obs') { $('res').style.display = 'none'; }
+  const path = (kind === 'calib') ? '/api/inbox' : '/api/observe';
+  const fd = new FormData();
+  fd.append('photo', file);
+  hienTienDo(kind, 0, 'Uploading… 0%', false);
+  let r;
+  try {
+    r = await guiXHR(path, fd,
+      (p) => hienTienDo(kind, p, 'Uploading… ' + p + '%', false),
+      () => hienTienDo(kind, 100, kind === 'obs' ? 'Analysing…' : 'Saving…', true));
+  } catch (e) {
+    anTienDo(kind);
+    showMsg('m-' + kind, 'err', e.message);
+    dangGui = false; khoaNut(false);
+    return;
+  }
+  anTienDo(kind);
+  const d = r.data || {};
+  if (r.status !== 200 || !d.ok) {
+    showMsg('m-' + kind, 'err', errText(r));
+  } else if (kind === 'calib') {
+    let html = '<div class="msg ok">Sent. On the laptop, select this photo in Step 1.</div>';
+    if (d.has_focal === false) html += '<div class="msg warn">No lens info in this photo; on the laptop, enter the field of view if you know it.</div>';
+    $('m-calib').innerHTML = html;
+  } else {
+    hienKetQuaRac(d, r.doGio);
+  }
+  dangGui = false; khoaNut(false);
+  napTrangThai();
+}
+
+function giay(ms) { return (typeof ms === 'number' && isFinite(ms)) ? fmtNum(ms / 1000, 1) + ' s' : '?'; }
+function hienKetQuaRac(d, doGio) {
+  $('res').style.display = 'block';
+  const nv = (typeof d.n_regions === 'number') ? d.n_regions : d.n_instances;
+  let html = 'Trash regions: ' + esc(typeof nv === 'number' ? nv : '?') +
+    '<br>Total area: ' + esc(fmtNum(d.total_area_m2, 3)) + ' m²';
+  const fs = (((d.regions || {}).features) || []).filter((f) => f && f.geometry);
+  if (fs.length) {
+    html += '<div class="timing"><b>Position relative to board centre</b> (up = +Y, right = +X):';
+    fs.forEach((f, i) => {
+      const q = f.properties || {};
+      html += '<br>Region ' + esc(q.idx || (i + 1)) + ': Y = <b>' + esc(fmtNum(q.y_m, 3)) + '</b> m; X = <b>' + esc(fmtNum(q.x_m, 3)) + '</b> m · ' + esc(fmtNum(q.area_m2, 3)) + ' m²';
+    });
+    html += '</div>';
+  }
+  if (doGio) {
+    html += '<div class="timing">⏱ Time: <b>' + esc(giay(doGio.tong_ms)) + '</b> (upload ' + esc(giay(doGio.tai_len_ms)) +
+      ' + waiting for result ' + esc(giay(doGio.cho_ket_qua_ms)) + '; server processing ' + esc(giay(d.processing_ms)) + ')</div>';
+  }
+  $('res-sum').innerHTML = html;
+  let w = '';
+  (d.warnings || []).forEach((x) => { w += '<div class="msg warn">' + esc(x) + '</div>'; });
+  $('res-warn').innerHTML = w;
+  const img = $('res-img');
+  if (d.annotated_jpg_b64) { img.src = 'data:image/jpeg;base64,' + d.annotated_jpg_b64; img.style.display = 'block'; }
+  else { img.removeAttribute('src'); img.style.display = 'none'; }
+  $('res').scrollIntoView({ block: 'nearest' });
+}
+
+// Nút chụp (capture) và liên kết chọn ảnh có sẵn (không capture), cho mỗi bước
+function noiInput(btnId, linkId, camId, fileId, kind) {
+  $(btnId).addEventListener('click', () => { if (!dangGui) $(camId).click(); });
+  $(linkId).addEventListener('click', () => { if (!dangGui) $(fileId).click(); });
+  [camId, fileId].forEach((id) => {
+    $(id).addEventListener('change', () => {
+      const f = $(id).files[0];
+      $(id).value = '';   // cho phép chọn lại đúng ảnh đó lần sau
+      if (f) guiAnh(kind, f);
+    });
+  });
+}
+noiInput('b-calib', 'l-calib', 'i-calib-cam', 'i-calib-file', 'calib');
+noiInput('b-obs', 'l-obs', 'i-obs-cam', 'i-obs-file', 'obs');
+
+napTrangThai();
+</script>
+</body>
+</html>

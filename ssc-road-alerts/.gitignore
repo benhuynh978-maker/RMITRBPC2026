@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+*.tsbuildinfo
+server/data/images/
+server/data/*.tmp
+server/certs/

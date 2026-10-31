@@ -1,0 +1,14 @@
+{
+  "type": "Feature",
+  "properties": {
+    "camera_id": "DEMO-CAM",
+    "source": "synthetic"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      106.7009,
+      10.7769
+    ]
+  }
+}

@@ -1,0 +1,168 @@
+@baseUrl = http://127.0.0.1:8010
+@adminKey =
+@deviceKey =
+@aiKey =
+@roadId = TEST-ROAD-001
+@cameraId = TEST-CAM-001
+@observationId = FRAME-001
+
+### 1. Server và cấu hình đánh giá
+GET {{baseUrl}}/api/health
+
+###
+GET {{baseUrl}}/api/policy
+
+### 2. Thêm tuyến (GeoJSON kinh độ trước vĩ độ)
+POST {{baseUrl}}/api/road-alerts
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{
+  "road_id": "{{roadId}}",
+  "road_name": "Tuyến thử nghiệm",
+  "geometry": {"type":"LineString","coordinates":[[106.7112,10.7874],[106.7132,10.7886],[106.7162,10.7901]]}
+}
+
+### 3. Thêm camera và gắn tuyến
+POST {{baseUrl}}/api/cameras
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{
+  "camera_id":"{{cameraId}}", "road_id":"{{roadId}}", "name":"Camera cửa cống 01",
+  "geometry":{"type":"Point","coordinates":[106.7132,10.7886]}
+}
+
+### 4. Sửa vị trí camera
+PATCH {{baseUrl}}/api/cameras/{{cameraId}}
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{"geometry":{"type":"Point","coordinates":[106.7133,10.7887]}}
+
+### 4b. (v2) Hiệu chỉnh vùng miệng cống (ROI) cố định cho camera
+# polygon: 3–64 điểm [x,y] chuẩn hóa 0–1 (x sang phải, y xuống dưới). source: ai | manual.
+# calibrated_at do server tự đặt (= phiên bản ROI); đổi polygon sẽ xóa drain_state cũ của camera.
+PATCH {{baseUrl}}/api/cameras/{{cameraId}}
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{"drain_roi":{"source":"manual","polygon":[[0.30,0.55],[0.70,0.55],[0.72,0.85],[0.28,0.85]]}}
+
+### 4c. (v2) Gỡ ROI — camera quay về công thức cũ (roi_calibrated:false), drain_state bị xóa
+PATCH {{baseUrl}}/api/cameras/{{cameraId}}
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{"drain_roi":null}
+
+### 5. ESP32 / gateway đã có URL ảnh (server không tự tải URL này)
+# Thay image_url bằng ảnh thật. observationId phải mới cho mỗi ảnh.
+# Khi retry, gửi đúng captured_at và URL cũ; timestamp động sẽ gây 409.
+POST {{baseUrl}}/api/esp32/observations
+Content-Type: application/json
+X-API-Key: {{deviceKey}}
+
+{
+  "camera_id":"{{cameraId}}", "observation_id":"{{observationId}}",
+  "captured_at":"{{$datetime iso8601}}", "image_url":"https://example.com/replace-with-real-image.jpg"
+}
+
+### 6. Worker AI lấy tác vụ đang chờ
+GET {{baseUrl}}/api/ai/jobs?status=pending&limit=20
+X-API-Key: {{aiKey}}
+
+### 7. Giả lập callback từ AI cho ảnh FRAME-001 (bạn nhập chỉ số để test)
+POST {{baseUrl}}/api/ai/results
+Content-Type: application/json
+X-API-Key: {{aiKey}}
+
+{
+  "camera_id":"{{cameraId}}", "observation_id":"{{observationId}}",
+  "waste_coverage_pct":82, "drain_blockage_pct":75, "confidence":0.96
+}
+
+### 7b. (v2) Kết quả đo trong ROI. roi_version = drain_roi.version của job (GET /api/ai/jobs).
+# Thay giá trị roi_version bằng version thật; lệch version thì kết quả được lưu nhưng không tính vào drain_state.
+POST {{baseUrl}}/api/ai/results
+Content-Type: application/json
+X-API-Key: {{aiKey}}
+
+{
+  "camera_id":"{{cameraId}}", "observation_id":"{{observationId}}",
+  "waste_coverage_pct":12.5, "drain_blockage_pct":64.2, "confidence":0.41,
+  "usable":true, "certainty":0.82, "no_trash_in_roi":false,
+  "blockage_method":"roi", "roi_version":"2026-10-11T03:00:00.000Z"
+}
+
+### 7c. (v2) Ảnh không dùng được (thiếu sáng...): bỏ trống phần trăm, không cập nhật hiện trạng/drain_state
+POST {{baseUrl}}/api/ai/results
+Content-Type: application/json
+X-API-Key: {{aiKey}}
+
+{
+  "camera_id":"{{cameraId}}", "observation_id":"{{observationId}}",
+  "confidence":0, "usable":false, "quality_reason":"thieu_sang",
+  "blockage_method":"roi", "roi_version":"2026-10-11T03:00:00.000Z"
+}
+
+### 8. Test nhanh không cần ảnh / worker. Dữ liệu được đánh dấu simulation.
+POST {{baseUrl}}/api/test/simulate
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{
+  "camera_id":"{{cameraId}}", "observation_id":"SIM-FRAME-001",
+  "captured_at":"{{$datetime iso8601}}",
+  "waste_coverage_pct":92, "drain_blockage_pct":87, "confidence":0.99
+}
+
+### 9. Dữ liệu frontend
+GET {{baseUrl}}/api/cameras
+
+###
+GET {{baseUrl}}/api/road-alerts
+
+### 10. Tạo cảnh báo thủ công (hết hạn sau 1 giờ)
+POST {{baseUrl}}/api/road-alerts/{{roadId}}/alert
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{"severity":"critical","description":"Demo: cần thu gom trước mưa","ttl_seconds":3600}
+
+### 11. Gửi dự báo mưa; dữ liệu này cũng có hạn 15 phút
+PUT {{baseUrl}}/api/road-alerts/{{roadId}}/weather
+Content-Type: application/json
+X-API-Key: {{adminKey}}
+
+{"rain_expected":true,"observed_at":"{{$datetime iso8601}}"}
+
+### 12. Xóa cảnh báo thủ công, quay về mức tính từ camera / thời tiết
+DELETE {{baseUrl}}/api/road-alerts/{{roadId}}/alert
+X-API-Key: {{adminKey}}
+
+### 13. AI báo lỗi (chỉ tác vụ còn pending)
+POST {{baseUrl}}/api/ai/jobs/fail
+Content-Type: application/json
+X-API-Key: {{aiKey}}
+
+{"camera_id":"{{cameraId}}","observation_id":"{{observationId}}","error":"Không đọc được ảnh"}
+
+### 14. Cho xử lý lại tác vụ failed hoặc needs_review
+POST {{baseUrl}}/api/ai/jobs/retry
+Content-Type: application/json
+X-API-Key: {{aiKey}}
+
+{"camera_id":"{{cameraId}}","observation_id":"{{observationId}}"}
+
+### 15. Xem lịch sử còn lưu (tối đa 100 quan sát / camera)
+GET {{baseUrl}}/api/ai/jobs?status=all&camera_id={{cameraId}}&limit=100
+X-API-Key: {{aiKey}}
+
+### 16. Chỉ chạy khi muốn xóa camera TEST đã tạo. Ảnh trên đĩa không tự xóa.
+DELETE {{baseUrl}}/api/cameras/{{cameraId}}
+X-API-Key: {{adminKey}}
+
+### 17. Xóa tuyến sau khi xóa/chuyển mọi camera trên tuyến
+DELETE {{baseUrl}}/api/road-alerts/{{roadId}}
+X-API-Key: {{adminKey}}

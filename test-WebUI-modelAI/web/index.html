@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSC — Thử model phát hiện rác</title>
+<style>
+  :root {
+    --bg: #f5f7f6;
+    --card: #ffffff;
+    --ink: #17241f;
+    --muted: #5c6b65;
+    --line: #dce4e0;
+    --brand: #218264;
+    --brand-soft: #e8f4ee;
+    --danger: #d33c4c;
+    --danger-soft: #fdecef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101613; --card: #18211d; --ink: #e9efec; --muted: #9fb0a8;
+      --line: #2a3832; --brand: #4cb894; --brand-soft: #16302a;
+      --danger: #ff8593; --danger-soft: #34191e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  h1 { font-size: 1.6rem; margin: 0 0 8px; letter-spacing: -0.01em; }
+  header p { color: var(--muted); margin: 0; font-size: 0.95rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px;
+  }
+  .drop {
+    border: 2px dashed var(--line); border-radius: 12px; padding: 34px 20px;
+    text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--brand); background: var(--brand-soft); }
+  .drop strong { display: block; margin-bottom: 6px; }
+  .drop span { color: var(--muted); font-size: 0.9rem; }
+  input[type=file] { display: none; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border: 0; border-radius: 9px;
+    padding: 11px 20px; background: var(--brand); color: #fff;
+  }
+  button:disabled { opacity: .55; cursor: default; }
+  .actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .status { margin-top: 18px; text-align: center; color: var(--muted); }
+  .error {
+    margin-top: 18px; padding: 12px 14px; border-radius: 10px;
+    background: var(--danger-soft); color: var(--danger); border: 1px solid currentColor;
+  }
+  .images { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; margin-top: 22px; }
+  @media (max-width: 640px) { .images { grid-template-columns: 1fr; } }
+  figure { margin: 0; }
+  figcaption { font-size: .85rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  img.shot { width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; }
+  .metrics { display: grid; gap: 12px; grid-template-columns: repeat(3, 1fr); margin-top: 22px; }
+  @media (max-width: 640px) { .metrics { grid-template-columns: 1fr; } }
+  .metric { background: var(--brand-soft); border-radius: 10px; padding: 14px; }
+  .metric dt { font-size: .82rem; color: var(--muted); margin-bottom: 4px; }
+  .metric dd { margin: 0; font-size: 1.25rem; font-weight: 700; }
+  .note { margin-top: 20px; font-size: .84rem; color: var(--muted); text-align: center; }
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--brand);
+    border-radius: 50%; display: inline-block; vertical-align: -3px; margin-right: 8px;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Thử model phát hiện rác &amp; miệng cống</h1>
+    <p>Tải lên một ảnh mặt đường hoặc miệng cống, hệ thống sẽ khoanh vùng rác và ước tính mức độ.</p>
+  </header>
+
+  <div class="card">
+    <label class="drop" id="drop" for="file">
+      <strong>Bấm để chọn ảnh, hoặc kéo thả ảnh vào đây</strong>
+      <span>JPG / PNG, tối đa 8MB</span>
+    </label>
+    <input type="file" id="file" accept="image/*">
+
+    <div class="actions">
+      <button id="send" disabled>Phân tích ảnh</button>
+      <button id="reset" class="ghost" hidden>Chọn ảnh khác</button>
+    </div>
+
+    <div id="status" class="status" hidden></div>
+    <div id="error" class="error" hidden></div>
+
+    <div class="images" id="images" hidden>
+      <figure><figcaption>Ảnh gốc</figcaption><img class="shot" id="src" alt="Ảnh bạn đã tải lên"></figure>
+      <figure><figcaption>Kết quả phân tích</figcaption><img class="shot" id="out" alt="Ảnh có khoanh vùng rác"></figure>
+    </div>
+
+    <dl class="metrics" id="metrics" hidden>
+      <div class="metric"><dt>Mức độ rác</dt><dd id="m-level">—</dd></div>
+      <div class="metric"><dt>Tỉ lệ ngập (rác che cống)</dt><dd id="m-flood">—</dd></div>
+      <div class="metric"><dt>Độ tin cậy</dt><dd id="m-conf">—</dd></div>
+    </dl>
+
+    <p class="note">Kết quả mang tính thử nghiệm, chưa dùng để điều phối thực tế. Ảnh bạn tải lên được lưu lại để cải thiện model.</p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const API = (window.SSC_API_URL || '').replace(/\/$/, '');
+const el = id => document.getElementById(id);
+const drop = el('drop'), fileInput = el('file'), sendBtn = el('send'), resetBtn = el('reset');
+let picked = null;
+
+function show(node, on) { node.hidden = !on; }
+function fail(message) { el('error').textContent = message; show(el('error'), true); }
+
+function choose(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return fail('Vui lòng chọn một tệp ảnh.');
+  if (file.size > 8 * 1024 * 1024) return fail('Ảnh vượt quá 8MB.');
+  picked = file;
+  show(el('error'), false);
+  show(el('metrics'), false);
+  el('src').src = URL.createObjectURL(file);
+  el('out').removeAttribute('src');
+  show(el('images'), true);
+  sendBtn.disabled = false;
+  drop.querySelector('strong').textContent = file.name;
+}
+
+fileInput.addEventListener('change', e => choose(e.target.files[0]));
+['dragenter', 'dragover'].forEach(type =>
+  drop.addEventListener(type, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(type =>
+  drop.addEventListener(type, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => choose(e.dataTransfer.files[0]));
+
+resetBtn.addEventListener('click', () => {
+  picked = null; fileInput.value = '';
+  show(el('images'), false); show(el('metrics'), false); show(el('error'), false);
+  show(resetBtn, false); sendBtn.disabled = true;
+  drop.querySelector('strong').textContent = 'Bấm để chọn ảnh, hoặc kéo thả ảnh vào đây';
+});
+
+sendBtn.addEventListener('click', async () => {
+  if (!picked) return;
+  if (!API) return fail('Chưa cấu hình địa chỉ máy chủ model (xem config.js).');
+
+  sendBtn.disabled = true;
+  show(el('error'), false);
+  el('status').innerHTML = '<span class="spinner"></span>Đang phân tích…';
+  show(el('status'), true);
+
+  const body = new FormData();
+  body.append('image', picked);
+
+  try {
+    const response = await fetch(API + '/api/predict', { method: 'POST', body });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      fail(data.error || `Máy chủ trả lỗi ${response.status}.`);
+      return;
+    }
+    el('out').src = data.annotated_image;
+    el('m-level').textContent = `${data.waste_level} · ${data.waste_coverage_pct}%`;
+    el('m-flood').textContent = data.drain_blockage_pct === null || data.drain_blockage_pct === undefined
+      ? 'Không thấy miệng cống'
+      : `${data.drain_blockage_pct}%`;
+    el('m-conf').textContent = `${Math.round(data.confidence * 100)}%`;
+    show(el('metrics'), true);
+    show(resetBtn, true);
+  } catch {
+    fail('Không kết nối được tới máy chủ model. Có thể máy chủ đang tắt, vui lòng thử lại sau.');
+  } finally {
+    show(el('status'), false);
+    sendBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
