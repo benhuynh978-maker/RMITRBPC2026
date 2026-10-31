@@ -2,14 +2,14 @@
 
 Two-page, bilingual (Vietnamese / English) website that introduces **CleanSight**: street-litter monitoring with fixed cameras and computer vision, mapped to where crews should clear first.
 
-Built with React 19, Vite and React Router, plain CSS. Static site: no backend, no analytics, no cookies, no external fonts or requests at runtime. The "Try the AI" page shows three **pre-computed** sample results (the model was run offline on each sample photo; nothing is analysed live). Uploading your own photo is not built yet: that control is disabled and marked *Coming soon*.
+Built with React 19, Vite and React Router, plain CSS. Static site: no backend, no analytics, no cookies, no external fonts or requests at runtime. The "Try the AI" page shows three **pre-computed** sample results (the model was run offline on each sample photo) and, during the live-demo window, lets a visitor upload their own photo to a small service run on the team's laptop (see *Live demo* below). The one external request the site can make is to that service; nothing else.
 
 ## Pages
 
 | Route | Page |
 |---|---|
 | `/` | Home: problem, solution, how it works, deployment, what is new, SDG 11, references, contact |
-| `/thu-ai` | Try the AI (3 pre-computed samples; upload coming soon) |
+| `/thu-ai` | Try the AI (3 pre-computed samples + live upload when the demo is open) |
 
 Old paths `/cong-nghe`, `/thu-nghiem` and `/lien-he` redirect to the matching section of the home page.
 
@@ -33,6 +33,12 @@ npm run preview    # http://localhost:4180, serves dist/
 ## Text and languages
 
 All visible text is in `src/i18n/vi.js` and `src/i18n/en.js` (identical keys). The default language follows the browser; the **VI | EN** toggle saves the choice in `localStorage` (`cleansight.lang`). The slogan is a single key, `brand.slogan`.
+
+## Live demo (upload your own photo)
+
+Service: `research/cleansight_demo_api/` (see its README for how to open and close it each day). The page asks `GET /api/health` on load and every 30 s; when it answers the status chip says *online* and the upload box is enabled, otherwise it says *offline* and only the samples work. The photo is shrunk to 1600 px and re-encoded in the browser (this drops EXIF/location), sent as raw `image/jpeg`, analysed in the service's memory and never saved.
+
+Where the page looks for the service: `DEMO_API_URL` in `src/lib/config.js` (default: the team laptop's Tailscale Funnel address, port 443). Override at build time with `VITE_DEMO_API_URL=https://...`; an **empty** value turns the live demo off and makes no network request. The same origin is allowed in `public/_headers` (`connect-src`): change both together, otherwise the browser blocks the request. The service in turn only accepts calls from the site's own address (`-Origin` of `open_demo.ps1`).
 
 ## Sample results (Try the AI)
 

@@ -9,7 +9,6 @@ const en = {
 
   common: {
     skip: 'Skip to main content',
-    comingSoon: 'Coming soon',
     disabledHint: 'Not active yet: this feature is coming soon.',
     refsTitle: 'References',
     refsNote: 'Numbers in square brackets match the reference list of the project report. Sources are in Vietnamese unless noted.',
@@ -189,18 +188,48 @@ const en = {
     hero: {
       eyebrow: 'Try the AI',
       title: 'See how the AI reads litter',
-      lead: 'Pick a sample photo to see how the AI reads litter. Uploading your own photo is still being built.',
+      lead: 'Pick a sample photo, or upload your own during the live demo window, to see how the AI reads litter.',
     },
     banner: {
-      title: 'Sample results now, upload soon',
-      text: 'Each result below was computed in advance by running the AI on that sample photo. It is not a live analysis. Uploading your own photo is coming later.',
+      title: 'Samples any time, your own photo in the live window',
+      text: 'Sample results are computed in advance. Your own photo is analysed on request by a computer run by the CleanSight team. The live demo is open daily 18:00–23:00 Vietnam time (UTC+7; 11:00–16:00 UTC) until 30 November 2026.',
     },
     upload: {
       title: 'Choose a photo',
       samplesTitle: 'Sample photos',
+      ownTitle: 'Or upload your own photo',
       drop: 'Drag and drop a photo, or click to choose',
       formats: 'JPG or PNG',
-      soonNote: 'Uploading your own photo is coming soon.',
+    },
+    live: {
+      status: {
+        checking: 'Checking the live demo…',
+        online: 'Live demo: online',
+        offline: 'Live demo: offline',
+      },
+      onlineNote: 'Your browser shrinks the photo and removes its metadata (such as location) before sending it.',
+      offlineNote:
+        'The live demo is open daily 18:00–23:00 Vietnam time (UTC+7) until 30 November 2026. Outside those hours, or if the host computer is off, only the sample photos work.',
+      preparing: 'Preparing your photo…',
+      analysing: 'Analysing your photo…',
+      badge: 'Your photo',
+      alt: 'Your photo with the model’s outlines drawn on it.',
+      note: 'This is the AI’s estimate for your photo. The demo is designed for street-level photos of the ground and drain inlets; other kinds of photo can give meaningless results.',
+      retryAfter: 'Please wait about {n} seconds.',
+      errors: {
+        invalid_image: 'This file could not be read as a photo. Try another JPG or PNG.',
+        unsupported_type: 'Only JPG and PNG photos are supported.',
+        too_big: 'This file is too large. Choose a photo under 25 MB.',
+        too_large: 'This photo has too many pixels. Choose a smaller one.',
+        too_small: 'This photo is too small to analyse.',
+        too_dark: 'This photo is too dark to analyse. The demo works on daytime photos.',
+        rate_limited: 'Too many photos sent.',
+        busy: 'The demo is busy right now. Please try again in a few seconds.',
+        not_ready: 'The live demo is starting. Please try again in a moment.',
+        network: 'Could not reach the live demo. It may be offline; try again later.',
+        timeout: 'The analysis took too long. Please try again.',
+        server: 'The live demo ran into a problem. Please try again.',
+      },
     },
     samples: {
       litter: {
@@ -237,7 +266,7 @@ const en = {
     },
     privacy: {
       title: 'Privacy',
-      text: 'When live, photos are processed only to analyse litter and drain inlets.',
+      text: 'When you upload a photo, it is sent over an encrypted connection to a computer run by the CleanSight team, analysed in memory and not saved. Please do not upload photos showing people or vehicle plates.',
     },
   },
 

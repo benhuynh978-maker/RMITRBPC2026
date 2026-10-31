@@ -9,7 +9,6 @@ const vi = {
 
   common: {
     skip: 'Bỏ qua, đến nội dung chính',
-    comingSoon: 'Sắp ra mắt',
     disabledHint: 'Chưa hoạt động: tính năng sắp ra mắt.',
     refsTitle: 'Tài liệu tham khảo',
     refsNote: 'Số trong ngoặc vuông khớp với danh mục tài liệu tham khảo của báo cáo dự án.',
@@ -189,18 +188,48 @@ const vi = {
     hero: {
       eyebrow: 'Thử AI',
       title: 'Xem AI đọc rác',
-      lead: 'Chọn một ảnh mẫu để xem AI đọc rác. Tính năng tải ảnh của bạn đang được hoàn thiện.',
+      lead: 'Chọn một ảnh mẫu, hoặc tải ảnh của bạn lên trong khung giờ demo trực tuyến, để xem AI đọc rác.',
     },
     banner: {
-      title: 'Đã có ảnh mẫu, tải ảnh sắp ra mắt',
-      text: 'Mỗi kết quả bên dưới được tính sẵn bằng cách chạy AI trên ảnh mẫu đó, không phải phân tích trực tiếp. Tính năng tải ảnh của bạn sẽ có sau.',
+      title: 'Ảnh mẫu mọi lúc, ảnh của bạn trong khung giờ trực tuyến',
+      text: 'Kết quả ảnh mẫu được tính sẵn. Ảnh của bạn được phân tích theo yêu cầu bởi một máy tính do nhóm CleanSight vận hành. Demo trực tuyến mở hằng ngày 18:00–23:00 giờ Việt Nam (UTC+7; 11:00–16:00 UTC) đến hết ngày 30/11/2026.',
     },
     upload: {
       title: 'Chọn ảnh',
       samplesTitle: 'Ảnh mẫu',
+      ownTitle: 'Hoặc tải ảnh của bạn lên',
       drop: 'Kéo thả ảnh hoặc bấm để chọn',
       formats: 'JPG hoặc PNG',
-      soonNote: 'Tính năng tải ảnh của bạn sắp ra mắt.',
+    },
+    live: {
+      status: {
+        checking: 'Đang kiểm tra demo trực tuyến…',
+        online: 'Demo trực tuyến: đang mở',
+        offline: 'Demo trực tuyến: đang tắt',
+      },
+      onlineNote: 'Trình duyệt của bạn thu nhỏ ảnh và bỏ thông tin đi kèm (như vị trí chụp) trước khi gửi.',
+      offlineNote:
+        'Demo trực tuyến mở hằng ngày 18:00–23:00 giờ Việt Nam (UTC+7) đến hết ngày 30/11/2026. Ngoài giờ đó, hoặc khi máy chủ đang tắt, chỉ dùng được các ảnh mẫu.',
+      preparing: 'Đang chuẩn bị ảnh của bạn…',
+      analysing: 'Đang phân tích ảnh của bạn…',
+      badge: 'Ảnh của bạn',
+      alt: 'Ảnh của bạn có viền do mô hình vẽ.',
+      note: 'Đây là ước tính của AI cho ảnh của bạn. Bản demo được thiết kế cho ảnh chụp mặt đất và miệng cống ở ngoài phố; ảnh loại khác có thể cho kết quả vô nghĩa.',
+      retryAfter: 'Vui lòng chờ khoảng {n} giây.',
+      errors: {
+        invalid_image: 'Không đọc được tệp này như một bức ảnh. Hãy thử ảnh JPG hoặc PNG khác.',
+        unsupported_type: 'Chỉ hỗ trợ ảnh JPG và PNG.',
+        too_big: 'Tệp quá lớn. Hãy chọn ảnh dưới 25 MB.',
+        too_large: 'Ảnh có quá nhiều điểm ảnh. Hãy chọn ảnh nhỏ hơn.',
+        too_small: 'Ảnh quá nhỏ để phân tích.',
+        too_dark: 'Ảnh quá tối để phân tích. Bản demo dùng cho ảnh chụp ban ngày.',
+        rate_limited: 'Bạn đã gửi quá nhiều ảnh.',
+        busy: 'Demo đang bận. Vui lòng thử lại sau vài giây.',
+        not_ready: 'Demo đang khởi động. Vui lòng thử lại sau giây lát.',
+        network: 'Không kết nối được tới demo trực tuyến. Có thể nó đang tắt; hãy thử lại sau.',
+        timeout: 'Việc phân tích mất quá lâu. Vui lòng thử lại.',
+        server: 'Demo trực tuyến gặp sự cố. Vui lòng thử lại.',
+      },
     },
     samples: {
       litter: {
@@ -237,7 +266,7 @@ const vi = {
     },
     privacy: {
       title: 'Quyền riêng tư',
-      text: 'Khi hoạt động, ảnh chỉ được xử lý để phân tích rác và miệng cống.',
+      text: 'Khi bạn tải ảnh lên, ảnh được gửi qua kết nối mã hoá tới một máy tính do nhóm CleanSight vận hành, được phân tích trong bộ nhớ và không được lưu lại. Vui lòng không tải ảnh có người hoặc biển số xe.',
     },
   },
 
