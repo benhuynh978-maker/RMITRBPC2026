@@ -1,26 +1,12 @@
-# Ignore everything by default
-/*
-
-# Explicitly allow the specified folders
-!/cleansight-site/
-!/cleansight-site-v2/
-!/research/
-!/ssc-v2/
-!/ssc-road-alerts/
-!/test-WebUI-modelAI/
-!/.gitignore
-
-# Inside those folders, ignore common large/unnecessary files
-**/__pycache__/
-**/*.pyc
-**/*.pyo
-**/.venv/
-**/node_modules/
-**/.env
-**/*.log
-**/runs/
-**/*.pt
-**/*.onnx
-**/*.weights
-**/.DS_Store
-**/Thumbs.db
+﻿node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.env.local
+*.tsbuildinfo
+ssc-road-alerts/server/data/
+ssc-road-alerts/server/certs/
+ssc-v2/ssc-road-alerts/server/data/
+ssc-v2/ssc-road-alerts/server/certs/
+research/exp02_ve_rac_len_ban_do/webtest/data/
