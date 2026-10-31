@@ -5,6 +5,7 @@ export const NAV_ITEMS = [
   { key: 'solution', hash: 'giai-phap' },
   { key: 'how', hash: 'cach-hoat-dong' },
   { key: 'tryAi', path: '/thu-ai' },
+  { key: 'lab', path: '/hieu-chinh' },
   { key: 'contact', hash: 'lien-he' },
 ];
 

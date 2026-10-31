@@ -8,6 +8,8 @@ import Home from './pages/Home.jsx';
 
 // Try-AI and 404 are split into their own chunks.
 const TryAI = lazy(() => import('./pages/TryAI.jsx'));
+const Lab = lazy(() => import('./pages/Lab.jsx'));
+const DrainLab = lazy(() => import('./pages/DrainLab.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // v2.0 had separate pages; their content now lives in home-page sections.
@@ -39,6 +41,8 @@ function Layout() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/thu-ai" element={<TryAI />} />
+            <Route path="/hieu-chinh" element={<Lab />} />
+            <Route path="/hieu-chinh/cong" element={<DrainLab />} />
             {LEGACY_REDIRECTS.map(([from, to]) => (
               <Route key={from} path={from} element={<Navigate to={to} replace />} />
             ))}

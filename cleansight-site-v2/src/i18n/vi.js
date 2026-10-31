@@ -19,6 +19,8 @@ const vi = {
   meta: {
     home: 'CleanSight',
     tryAi: 'Thử AI — CleanSight',
+    lab: 'Phòng thử hiệu chỉnh — CleanSight',
+    drainLab: 'Vẽ vùng miệng cống — CleanSight',
     notFound: 'Không tìm thấy trang — CleanSight',
   },
 
@@ -28,6 +30,7 @@ const vi = {
     solution: 'Giải pháp',
     how: 'Cách hoạt động',
     tryAi: 'Thử AI',
+    lab: 'Phòng thử hiệu chỉnh',
     contact: 'Liên hệ',
     cta: 'Liên hệ thí điểm',
     menuOpen: 'Mở menu',
@@ -182,6 +185,29 @@ const vi = {
       ],
       emailTitle: 'Email',
     },
+  },
+
+  lab: {
+    hero: {
+      eyebrow: 'Phòng thử hiệu chỉnh',
+      title: 'Thử hai bước cài đặt cần đến bàn tay con người',
+      lead: 'Một camera chỉ cần người cài đặt một lần. Hãy thử hai bước đó: hiệu chỉnh camera bằng bảng in, và khoanh vùng miệng cống.',
+    },
+    banner: {
+      title: 'Cả hai phòng thử chạy trực tiếp trên laptop của nhóm',
+      text: 'Chúng hoạt động khi demo trực tuyến đang mở: hằng ngày 18:00–23:00 giờ Việt Nam (UTC+7; 11:00–16:00 UTC) đến hết ngày 30/11/2026. Ảnh là ảnh mẫu của nhóm, và không có gì được ghi ra đĩa. Các trang phòng thử bằng tiếng Anh.',
+    },
+    board: {
+      title: 'Hiệu chỉnh bằng bảng, vẽ rác lên bản đồ',
+      text: 'Dò tờ bảng ArUco đã in trong ảnh, đặt nó lên bản đồ, xem trước vùng camera nhìn thấy, rồi gửi ảnh có rác để xem các vùng rác kèm vị trí và diện tích theo mét vuông.',
+      cta: 'Mở phòng thử bảng',
+    },
+    drain: {
+      title: 'Vẽ vùng cống, đo mức bị che',
+      text: 'Khoanh miệng cống trên ảnh, rồi đo xem bao nhiêu phần của vùng đó bị rác che. Vùng do người vẽ nên cống bị che kín vẫn ra một con số.',
+      cta: 'Mở phòng thử cống',
+    },
+    note: 'Giới hạn, nói thẳng: ảnh đơn trong một phiên, một người thao tác, ban ngày; mô hình AI còn bỏ sót rác; vị trí giả định mặt đất phẳng và camera không nhúc nhích sau khi hiệu chỉnh.',
   },
 
   tryAi: {

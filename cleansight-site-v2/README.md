@@ -10,6 +10,9 @@ Built with React 19, Vite and React Router, plain CSS. Static site: no backend, 
 |---|---|
 | `/` | Home: problem, solution, how it works, deployment, what is new, SDG 11, references, contact |
 | `/thu-ai` | Try the AI (3 pre-computed samples + live upload when the demo is open) |
+| `/hieu-chinh` | Calibration lab: landing page with the two hands-on labs (nav item "Calibration lab") |
+| `/hieu-chinh/cong` | Drain lab: outline a drain zone on a sample photo and measure litter coverage (English only) |
+| `/lab/board/` | Board lab: ArUco board calibration, then litter drawn on a map (static page in `public/lab/board/`, English only) |
 
 Old paths `/cong-nghe`, `/thu-nghiem` and `/lien-he` redirect to the matching section of the home page.
 
@@ -54,6 +57,14 @@ Service: `research/cleansight_demo_api/` (see its README for how to open and clo
 
 Where the page looks for the service: `DEMO_API_URL` in `src/lib/config.js` (default: the team laptop's Tailscale Funnel address, port 443). Override at build time with `VITE_DEMO_API_URL=https://...`; an **empty** value turns the live demo off and makes no network request. The same origin is allowed in `public/_headers` (`connect-src`): change both together, otherwise the browser blocks the request. The service in turn only accepts calls from the site's own address (`-Origin` of `open_demo.ps1`).
 
+## Calibration lab (judges' hands-on)
+
+Both labs use the **same live service** and the same window (daily 18:00–23:00 Vietnam time until 30 Nov 2026); the photos are fixed samples held by the service (`research/cleansight_demo_api/lab_samples/`, thumbnails in `public/img/lab/`), judges cannot upload. State (calibration, observations) lives in the service's RAM per browser tab (`X-Lab-Session`) and expires after 30 min idle.
+
+- `/hieu-chinh/cong` is React: `RoiCanvas`, `RoiToolbar` and `roiGeometry.ts` are copied unchanged from the ssc-v2 drain UI; "Measure" posts the polygon to `/api/lab/drain/measure`.
+- `/lab/board/` is a copy of the exp02 web test page (`index.html`, `lab.css`, `lab.js`) adapted to CSP (no inline script, Leaflet vendored in `vendor/leaflet`, OpenStreetMap France tiles) and to the sample/session API. **`public/lab/board/lab-config.js` holds the service address and must match `src/lib/config.js` and `connect-src` in `_headers`.** It is a plain page, so it does not follow the VI|EN toggle.
+- Photos in `public/img/lab/` show the team's own scenes (a HUTECH bench label and shop logos are visible in the drain photo; the owner accepted this).
+
 ## Sample results (Try the AI)
 
 Every number, outlined photo and note on `/thu-ai` comes from `src/data/samples.json` and `public/img/samples/`, generated offline by `research/cleansight_samples/make_samples.py` (model `baseline_v1_rev2`, single-photo method, no drain zone). Do not edit `samples.json` by hand: change the source photos and re-run the script. The text notes about each sample (what the model got wrong) are in `src/i18n/*.js` under `tryAi.samples` and must be re-checked against the annotated image whenever a sample is regenerated. Sample photos must be the team's own, with no people, vehicle plates or logos.
@@ -66,9 +77,10 @@ src/
   main.jsx           fonts + CSS
   i18n/              dictionaries and provider
   components/        Nav, Footer, Section, cards, diagram, references, scroll manager…
-  pages/             Home, TryAI, NotFound
+  pages/             Home, TryAI, Lab, DrainLab, NotFound
+  components/lab/    RoiCanvas, RoiToolbar (copied from ssc-v2)
   lib/               contact email, references, nav items
   data/              samples.json (generated, see above)
   styles/            tokens, base, components, pages
-public/              favicon, hero photo, img/samples, _headers, _redirects
+public/              favicon, hero photo, img/samples, img/lab, lab/board (static page), _headers, _redirects
 ```

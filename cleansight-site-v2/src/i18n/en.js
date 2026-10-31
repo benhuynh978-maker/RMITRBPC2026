@@ -19,6 +19,8 @@ const en = {
   meta: {
     home: 'CleanSight',
     tryAi: 'Try the AI — CleanSight',
+    lab: 'Calibration lab — CleanSight',
+    drainLab: 'Draw the drain zone — CleanSight',
     notFound: 'Page not found — CleanSight',
   },
 
@@ -28,6 +30,7 @@ const en = {
     solution: 'Solution',
     how: 'How it works',
     tryAi: 'Try the AI',
+    lab: 'Calibration lab',
     contact: 'Contact',
     cta: 'Talk about a pilot',
     menuOpen: 'Open menu',
@@ -182,6 +185,29 @@ const en = {
       ],
       emailTitle: 'Email',
     },
+  },
+
+  lab: {
+    hero: {
+      eyebrow: 'Calibration lab',
+      title: 'Try the two hands-on setup steps',
+      lead: 'A person sets a camera up once. Try the two steps that need human hands: calibrating the camera with a printed board, and outlining the drain inlet.',
+    },
+    banner: {
+      title: 'Both labs run live on the team’s laptop',
+      text: 'They work while the live demo is open: daily 18:00–23:00 Vietnam time (UTC+7; 11:00–16:00 UTC) until 30 November 2026. The photos are the team’s own samples, and nothing is written to disk. The lab pages are in English.',
+    },
+    board: {
+      title: 'Calibrate with the board, draw litter on the map',
+      text: 'Detect the printed ArUco board in a photo, place it on the map, preview what the camera sees, then send a photo with litter and see the litter regions with their position and area in square metres.',
+      cta: 'Open the board lab',
+    },
+    drain: {
+      title: 'Draw the drain zone, measure how covered it is',
+      text: 'Outline the drain inlet on a photo, then measure how much of that zone is covered by litter. The zone is drawn by a person, so a fully covered inlet still gets a number.',
+      cta: 'Open the drain lab',
+    },
+    note: 'Limits, stated plainly: single photos from one session, one operator, daytime; the AI model still misses some litter; positions assume flat ground and a camera that does not move after calibration.',
   },
 
   tryAi: {

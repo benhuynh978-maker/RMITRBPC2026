@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Calibration lab: board to trash on map | CleanSight</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+<div id="topbar">
+  <a href="/hieu-chinh">&larr; CleanSight</a>
+  <b>Calibration lab: board &rarr; trash on map</b>
+  <span>Live demo: <span id="st-server" class="chip wait">checking…</span></span>
+  <span>Your calibration: <span id="st-calib" class="chip wait">…</span></span>
+  <span>AI model: <span id="st-model" class="chip wait">…</span></span>
+  <span class="when">Open daily 18:00–23:00 Vietnam time (UTC+7), until 30 Nov 2026</span>
+</div>
+
+<div id="main">
+  <div id="map"></div>
+  <div id="panel">
+
+    <!-- BƯỚC 1 -->
+    <section class="step open" id="s1">
+      <div class="step-head" data-step="s1"><span class="step-num">1</span><span class="step-title">Calibrate with the board</span><span class="step-badge" id="b1"></span></div>
+      <div class="step-body">
+        <div class="mode-box">
+          <b>Board position mode</b>
+          <label><input type="radio" name="che-do" value="1" checked /> <span><b>1. Fixed point</b>: the previous position and heading are kept as the starting point.</span></label>
+          <label><input type="radio" name="che-do" value="2" /> <span><b>2. Choose position</b>: after detecting the board, click its position on the map (the old point is not reused).</span></label>
+          <div class="hint" id="mode-hint"></div>
+        </div>
+        <p class="hint">Choose a photo of the ArUco board (taken from a fixed camera position). These are the team's own sample photos.</p>
+        <div id="sample-calib" class="sample-list"><span class="hint">Loading the sample photos…</span></div>
+        <label class="fl" for="f-size">Real board side length (mm)</label>
+        <input type="number" id="f-size" value="250" min="10" step="any" />
+        <div class="hint">Measure with a ruler after printing (side of the large black square). The sample board measured 250 mm.</div>
+        <label class="fl" for="f-fov">Lens field of view (degrees, optional)</label>
+        <input type="number" id="f-fov" placeholder="leave blank" min="10" max="170" step="any" />
+        <div class="hint">Blank = read from the photo; if missing, 66° is used.</div>
+        <div class="row"><button id="btn-detect">Detect board</button></div>
+        <div id="msg1"></div>
+        <div id="r1" style="display:none">
+          <img id="r1-img" class="thumb" alt="Detected board (click to enlarge)" title="Click to enlarge" />
+          <div class="hint">Red = +X (to the right of +Y), blue = +Y.</div>
+          <div style="margin-top:8px">Board size: <b id="r1-px"></b> <span id="r1-tag" class="tag"></span></div>
+          <div style="margin-top:4px">Field of view: <b id="r1-fov"></b> <span id="r1-src"></span></div>
+          <div style="margin-top:4px">Estimated camera height: <b id="r1-h"></b> <span class="hint">(compare with your ruler measurement)</span></div>
+          <ul id="r1-warn" class="warn-list" style="display:none"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- BƯỚC 2 -->
+    <section class="step locked" id="s2">
+      <div class="step-head" data-step="s2"><span class="step-num">2</span><span class="step-title">Place the board on the map</span><span class="step-badge" id="b2"></span></div>
+      <div class="step-body">
+        <p class="hint" id="s2-hint">Click the map where the board is placed; drag the blue arrow to set the direction of the board's '+Y' edge (the blue +Y arrow in the step 1 image).</p>
+        <div>+Y edge heading: <span class="read" id="az-val">—</span> <span class="hint">(0° = North, 90° = East)</span></div>
+        <div class="hint" id="pos-val">Position: —</div>
+        <div class="row">
+          <span class="pad">
+            <span></span><button type="button" data-dn="1" data-de="0" title="Nudge 5 cm north">▲</button><span></span>
+            <button type="button" data-dn="0" data-de="-1" title="Nudge 5 cm west">◀</button>
+            <span></span>
+            <button type="button" data-dn="0" data-de="1" title="Nudge 5 cm east">▶</button>
+            <span></span><button type="button" data-dn="-1" data-de="0" title="Nudge 5 cm south">▼</button><span></span>
+          </span>
+          <span class="rot">
+            <button type="button" data-rot="-1" title="Rotate 1° counter-clockwise">⟲</button>
+            <button type="button" data-rot="1" title="Rotate 1° clockwise">⟳</button>
+          </span>
+          <span class="hint">nudge 5 cm / rotate 1°</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- BƯỚC 3 -->
+    <section class="step locked" id="s3">
+      <div class="step-head" data-step="s3"><span class="step-num">3</span><span class="step-title">Preview &amp; save</span><span class="step-badge" id="b3"></span></div>
+      <div class="step-body">
+        <p class="hint">Check by eye: does the green area match the real ground? Nudge/rotate until it does.</p>
+        <div id="fp-msg"></div>
+        <div class="row"><button id="btn-save">Save calibration</button></div>
+        <div id="save-msg"></div>
+      </div>
+    </section>
+
+    <!-- BƯỚC 4 -->
+    <section class="step locked" id="s4">
+      <div class="step-head" data-step="s4"><span class="step-num">4</span><span class="step-title">Send a trash photo</span><span class="step-badge" id="b4"></span></div>
+      <div class="step-body">
+        <div id="calib-summary" class="msg info" style="display:none"></div>
+        <div class="row"><button id="btn-recalib" class="sec" style="display:none">Recalibrate</button></div>
+        <div id="dirty-msg"></div>
+        <p class="hint">Choose a photo with trash, taken from the SAME fixed position as the calibration photo.</p>
+        <div id="sample-trash" class="sample-list"><span class="hint">Loading the sample photos…</span></div>
+        <div class="row"><button id="btn-observe">Send and draw on map</button></div>
+        <div id="msg4"></div>
+        <div id="r4" style="display:none">
+          <div style="margin-top:8px" id="r4-sum"></div>
+          <img id="r4-img" class="thumb" alt="Model output (click to enlarge)" title="Click to enlarge" />
+        </div>
+        <div style="margin-top:12px"><b>Submission history</b></div>
+        <div id="obs-list"><span class="hint">No submissions yet.</span></div>
+        <div class="row"><button id="btn-clear" class="danger">Delete all</button></div>
+      </div>
+    </section>
+
+    <div id="note"><b>Experimental:</b> results hold only for a fixed phone/camera and flat ground; tall objects are drawn enlarged; the model may miss trash. The photos are the team's own samples. The board is detected and the trash is outlined live by the team's AI model on a laptop; the model also outlines the printed board itself, which is not trash. Your calibration and results are kept only in the laptop's memory (for up to 30 minutes without activity) and are never written to disk.</div>
+  </div>
+</div>
+
+<div id="lb"><img id="lb-img" alt="" /></div>
+<div id="toast" role="status"></div>
+<script src="lab-config.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="lab.js"></script>
+</body>
+</html>

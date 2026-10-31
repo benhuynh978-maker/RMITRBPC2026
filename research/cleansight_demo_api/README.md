@@ -47,6 +47,7 @@ tailscale funnel --https=8444 off
 | `CLEANSIGHT_RATE_PER_MINUTE` / `_PER_HOUR` | 5 / 50 | Giới hạn theo IP |
 | `CLEANSIGHT_RATE_GLOBAL_PER_MINUTE` | 20 | Trần chung toàn dịch vụ |
 | `CLEANSIGHT_MAX_WAITING` | 3 | Số yêu cầu được xếp hàng chờ (ngoài 1 yêu cầu đang chạy) |
+| `CLEANSIGHT_LAB_LIGHT_PER_MINUTE` / `CLEANSIGHT_LAB_HEAVY_PER_MINUTE` | 90 / 12 | Giới hạn theo IP của phòng thử: mọi lời gọi / lời gọi chạy model (vẽ rác lên bản đồ, đo vùng cống) |
 
 ## API
 `GET /api/health` → `{"status":"ok","ready":true}`
@@ -56,9 +57,24 @@ tailscale funnel --https=8444 off
 Thành công (200): `{"waste_pct", "level_index" (-1 = dưới mức Low; 0..3 = Low/Medium/High/Severe), "drain_pct" (null = không phát hiện cống), "annotated_jpg" (data URL)}`.
 Lỗi: `{"error", "code"}`. Mã: `invalid_image` 400, `too_big` 413, `unsupported_type` 415, `too_large` / `too_small` / `too_dark` 422, `rate_limited` / `busy_global` 429 (kèm `Retry-After`), `busy` / `not_ready` 503, `server_error` 500.
 
+### Phòng hiệu chỉnh (`lab.py`, đăng ký trong `server.py`)
+Chỉ dùng ảnh mẫu nằm trong `lab_samples/` (giám khảo không tải ảnh lên), trạng thái giữ trong RAM theo header `X-Lab-Session` (hết hạn sau 30 phút không dùng, tối đa 40 phiên, không ghi đĩa).
+
+| Đường dẫn | Việc |
+|---|---|
+| `GET /api/lab/board/samples` | Danh sách ảnh mẫu (bảng ArUco / ảnh có rác) |
+| `POST /api/lab/board/detect` | `{sample_id, marker_size_mm, fov_deg?}` → dò bảng, tư thế camera. Bảng nhỏ hơn 50 px → 422 `board_too_small` |
+| `GET /api/lab/board/footprint`, `POST …/calibration/save`, `GET …/calibration` | Xem trước vùng nhìn, lưu hiệu chỉnh, đọc lại |
+| `POST /api/lab/board/observe` | `{sample_id}` → chạy model, vẽ vùng rác lên bản đồ (m², toạ độ so với tâm bảng) |
+| `GET/DELETE /api/lab/board/observations` | Danh sách / xoá các lần gửi |
+| `GET /api/lab/drain/samples`, `POST /api/lab/drain/measure` | `{sample_id, polygon}` (3–64 điểm, đa giác hợp lệ) → % rác che vùng cống |
+
+Hai nhóm giới hạn theo IP riêng cho phòng thử (xem bảng cấu hình), dùng chung hàng đợi/khoá model với `/api/analyze`.
+
 ## Kiểm thử
 ```bash
 python -B test_demo_api.py        # 45 kiểm tra, có chạy model thật
+python -B test_lab_api.py         # 70 kiểm tra phòng hiệu chỉnh: luồng, cô lập phiên, không ghi đĩa, giới hạn, CORS
 ```
 Kiểm: định dạng/kích thước/ảnh hỏng, ảnh "bom" điểm ảnh không bị giải mã, tần suất (kể cả giả mạo `X-Forwarded-For`), CORS, **không ghi gì ra đĩa**, không log IP, khởi động thất bại khi cấu hình CORS sai.
 

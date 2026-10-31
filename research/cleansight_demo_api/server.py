@@ -142,6 +142,21 @@ _pending_lock = threading.Lock()
 _ready = False
 
 
+def reserve_slot() -> None:
+    """Giữ một chỗ trong hàng chờ model (1 đang chạy + MAX_WAITING chờ); đầy thì 503. Dùng chung với phòng thử (lab.py)."""
+    global _pending
+    with _pending_lock:
+        if _pending >= MAX_WAITING + 1:
+            raise ApiError(503, "busy", "The demo is busy right now. Please try again in a few seconds.", {"Retry-After": "5"})
+        _pending += 1
+
+
+def release_slot() -> None:
+    global _pending
+    with _pending_lock:
+        _pending -= 1
+
+
 def client_ip(request: Request) -> str:
     """Dịch vụ chỉ nghe 127.0.0.1 và đứng sau Tailscale Funnel. Lấy phần tử CUỐI của X-Forwarded-For:
     nếu proxy ghi đè thì chỉ có một giá trị; nếu proxy nối thêm thì phần tử cuối là địa chỉ thật,
@@ -180,8 +195,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Lab-Session"],
     expose_headers=["Retry-After"],  # không khai báo thì trình duyệt không cho trang đọc Retry-After của yêu cầu khác nguồn
     max_age=600,
 )
@@ -292,7 +307,6 @@ async def health():
 
 @app.post("/api/analyze")
 async def analyze_endpoint(request: Request):
-    global _pending
     allowed, retry_after, code = limiter.check(client_ip(request))
     if not allowed:
         message = "The demo is busy. Please try again shortly." if code == "busy_global" else "Too many photos sent."
@@ -306,13 +320,15 @@ async def analyze_endpoint(request: Request):
     if not raw:
         raise ApiError(400, "invalid_image", "No photo received.")
 
-    with _pending_lock:
-        if _pending >= MAX_WAITING + 1:
-            raise ApiError(503, "busy", "The demo is busy right now. Please try again in a few seconds.", {"Retry-After": "5"})
-        _pending += 1
+    reserve_slot()
     try:
         result = await run_in_threadpool(process, raw)
     finally:
-        with _pending_lock:
-            _pending -= 1
+        release_slot()
     return JSONResponse(result)
+
+
+# Phòng thử hiệu chỉnh cho giám khảo (Board lab + Drain lab): xem lab.py.
+import lab  # noqa: E402
+
+lab.register(app, sys.modules[__name__])
