@@ -26,7 +26,21 @@ npm run preview    # http://localhost:4180, serves dist/
 
 ## Deploy (Netlify)
 
-`netlify.toml` already sets everything: build command `npm run build`, publish directory `dist`, Node 22 and the single-page-app fallback. Connect this repository in Netlify (*Add new site → Import an existing project*) and keep the detected settings. Security headers and a strict CSP live in `public/_headers` (`self` only).
+The repository root has a `netlify.toml` that sets `base = "cleansight-site-v2"`, and this folder's `netlify.toml` sets the build command (`npm run build`), the publish directory (`dist`, relative to the base), Node 22 and the single-page-app fallback. Security headers and a strict CSP live in `public/_headers`.
+
+**Git-connected site** (Add new site → Import an existing project → GitHub → this repository):
+
+| Setting | Value |
+|---|---|
+| Branch to deploy (production branch) | `claude/brave-mendel-db9h6k` (**not** `master`: it holds the old site) |
+| Base directory, build command, publish directory | leave the detected values; they come from the two `netlify.toml` files |
+| Environment variables | none needed |
+
+Every push to the production branch is published to the public site **automatically**. To review before anything goes live, turn on *Deploys → Stop auto publishing*: each push is still built, and you publish it with one click.
+
+**Without Git:** `npm ci && npm run build`, then drag the `dist/` folder onto Netlify (Add new site → Deploy manually).
+
+After the first deploy: open `/thu-ai` directly (the SPA fallback must serve it), switch VI/EN, click the three samples, and check that the status chip reads *offline* while the laptop demo is closed.
 
 `index.html` contains `<meta name="robots" content="noindex">`, so search engines will not list the site; people with the link can still open it. Remove that tag to allow indexing.
 

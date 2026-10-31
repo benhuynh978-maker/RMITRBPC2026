@@ -1,0 +1,6 @@
+# Netlify: website is the cleansight-site-v2/ folder of this repository.
+# Only `base` is set here so a Git-connected Netlify site builds the right folder without any UI setting;
+# the build command, publish directory (dist, relative to base), Node version and redirects
+# live in cleansight-site-v2/netlify.toml, which Netlify reads from the base directory.
+[build]
+  base = "cleansight-site-v2"
