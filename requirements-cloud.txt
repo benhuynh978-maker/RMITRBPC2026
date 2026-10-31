@@ -1,0 +1,19 @@
+﻿# Python dependencies for running the SSC / CleanSight system on a Linux cloud session.
+# Versions taken from the working Windows .venv (Python 3.12). On Linux, torch comes from PyPI.
+ultralytics==8.4.126
+torch==2.6.0
+torchvision==0.21.0
+opencv-python==5.0.0.93
+numpy==2.5.2
+pillow==12.3.0
+PyYAML==6.0.3
+pandas==3.0.5
+matplotlib==3.11.1
+fastapi==0.141.1
+starlette==1.6.0
+pydantic==2.13.4
+uvicorn==0.52.4
+python-multipart==0.0.32
+httpx==0.28.1
+requests==2.34.2
+psutil==7.2.2

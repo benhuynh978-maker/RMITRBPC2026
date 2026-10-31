@@ -1,0 +1,3 @@
+# Cài trong .venv đã có sẵn ultralytics/torch/opencv/numpy/pillow ở gốc SSC:
+#   .venv\Scripts\pip install -r inference\requirements.txt
+requests>=2.31

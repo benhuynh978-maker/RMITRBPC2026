@@ -1,0 +1,12 @@
+﻿node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.env.local
+*.tsbuildinfo
+ssc-road-alerts/server/data/
+ssc-road-alerts/server/certs/
+ssc-v2/ssc-road-alerts/server/data/
+ssc-v2/ssc-road-alerts/server/certs/
+research/exp02_ve_rac_len_ban_do/webtest/data/
