@@ -1,0 +1,32 @@
+{
+  "_comment": "Sinh bởi research/cleansight_samples/make_samples.py. Không sửa tay.",
+  "model": "baseline_v1_rev2",
+  "method": "legacy (no drain zone)",
+  "generated": "2026-10-31",
+  "samples": [
+    {
+      "id": "litter",
+      "width": 1280,
+      "height": 720,
+      "wastePct": 2.7,
+      "levelIndex": 0,
+      "drainPct": null
+    },
+    {
+      "id": "clean",
+      "width": 1280,
+      "height": 720,
+      "wastePct": 0.07,
+      "levelIndex": -1,
+      "drainPct": null
+    },
+    {
+      "id": "drain",
+      "width": 1280,
+      "height": 720,
+      "wastePct": 0.0,
+      "levelIndex": -1,
+      "drainPct": null
+    }
+  ]
+}
