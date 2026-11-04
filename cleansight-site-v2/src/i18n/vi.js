@@ -195,7 +195,7 @@ const vi = {
     },
     banner: {
       title: 'Cả hai phòng thử chạy trực tiếp trên laptop của nhóm',
-      text: 'Chúng hoạt động khi demo trực tuyến đang mở: hằng ngày 18:00–23:00 giờ Việt Nam (UTC+7; 11:00–16:00 UTC) đến hết ngày 30/11/2026. Ảnh là ảnh mẫu của nhóm, và không có gì được ghi ra đĩa. Các trang phòng thử bằng tiếng Anh.',
+      text: 'Chúng hoạt động khi demo trực tuyến đang mở (trạng thái hiển thị bên dưới). Ảnh là ảnh mẫu của nhóm, và không có gì được ghi ra đĩa. Các trang phòng thử bằng tiếng Anh.',
     },
     board: {
       title: 'Hiệu chỉnh bằng bảng, vẽ rác lên bản đồ',
@@ -214,11 +214,11 @@ const vi = {
     hero: {
       eyebrow: 'Thử AI',
       title: 'Xem AI đọc rác',
-      lead: 'Chọn một ảnh mẫu, hoặc tải ảnh của bạn lên trong khung giờ demo trực tuyến, để xem AI đọc rác.',
+      lead: 'Chọn một ảnh mẫu, hoặc tải ảnh của bạn lên khi demo trực tuyến đang mở, để xem AI đọc rác.',
     },
     banner: {
-      title: 'Ảnh mẫu mọi lúc, ảnh của bạn trong khung giờ trực tuyến',
-      text: 'Kết quả ảnh mẫu được tính sẵn. Ảnh của bạn được phân tích theo yêu cầu bởi một máy tính do nhóm CleanSight vận hành. Demo trực tuyến mở hằng ngày 18:00–23:00 giờ Việt Nam (UTC+7; 11:00–16:00 UTC) đến hết ngày 30/11/2026.',
+      title: 'Ảnh mẫu mọi lúc, ảnh của bạn khi demo trực tuyến đang mở',
+      text: 'Kết quả ảnh mẫu được tính sẵn. Ảnh của bạn được phân tích theo yêu cầu bởi một máy tính do nhóm CleanSight vận hành. Demo trực tuyến mở khi máy tính đó đang bật; chấm trạng thái cho biết nó có đang mở hay không.',
     },
     upload: {
       title: 'Chọn ảnh',
@@ -235,7 +235,7 @@ const vi = {
       },
       onlineNote: 'Trình duyệt của bạn thu nhỏ ảnh và bỏ thông tin đi kèm (như vị trí chụp) trước khi gửi.',
       offlineNote:
-        'Demo trực tuyến mở hằng ngày 18:00–23:00 giờ Việt Nam (UTC+7) đến hết ngày 30/11/2026. Ngoài giờ đó, hoặc khi máy chủ đang tắt, chỉ dùng được các ảnh mẫu.',
+        'Demo trực tuyến chạy trên một máy tính do nhóm vận hành. Khi máy đó tắt, chỉ dùng được các ảnh mẫu.',
       preparing: 'Đang chuẩn bị ảnh của bạn…',
       analysing: 'Đang phân tích ảnh của bạn…',
       badge: 'Ảnh của bạn',

@@ -81,7 +81,6 @@
   .ib-item .tx { font-size: 14px; }
   .ib-item .tx .hint { margin: 2px 0 0 0; font-size: 13px; }
   #topbar a { color: #bcd3ff; font-weight: 600; }
-  #topbar .when { opacity: 0.85; font-size: 13px; }
 
   /* Thông báo nhỏ */
   #toast { display: none; position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 4000; padding: 8px 16px; background: #15803d; color: #fff; border-radius: 18px; font-weight: 600; box-shadow: 0 3px 12px rgba(0,0,0,0.3); }

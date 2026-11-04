@@ -9,18 +9,18 @@ Dịch vụ nhỏ, **tách biệt hoàn toàn** với hệ thống chính, để
 
 > Phạm vi trung thực: kết quả là **ước tính của AI** (model còn bỏ sót rác, recall 0,44), công thức một ảnh đơn không có vùng cống cố định. Dịch vụ không phải "thời gian thực" và không dự báo ngập.
 
-## Mỗi ngày (18:00–23:00 giờ Việt Nam, 1–30/11/2026)
+## Mở và đóng demo (không còn khung giờ cố định)
 
-Cần: laptop cắm sạc, tắt chế độ ngủ, đã đăng nhập Tailscale.
+Cần: laptop cắm sạc, tắt chế độ ngủ (nếu để mở cả ngày), đã đăng nhập Tailscale. Demo chỉ online khi laptop đang bật và dịch vụ đang chạy; trang web có chấm trạng thái cho người xem biết.
 
-**Mở (khoảng 17:45)**, trong PowerShell:
+**Mở**, trong PowerShell:
 ```powershell
 cd C:\Users\ASUS\Desktop\CleanSight-test\research\cleansight_demo_api
 powershell -ExecutionPolicy Bypass -File open_demo.ps1 -Origin https://TEN-SITE-CUA-BAN.netlify.app
 ```
 Script sẽ: khởi động dịch vụ → chờ model nạp xong → bật Funnel cổng 443 → in trạng thái.
 
-**Đóng (23:00):**
+**Đóng (khi không cần nữa):**
 ```powershell
 powershell -ExecutionPolicy Bypass -File close_demo.ps1
 ```

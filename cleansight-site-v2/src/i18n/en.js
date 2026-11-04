@@ -195,7 +195,7 @@ const en = {
     },
     banner: {
       title: 'Both labs run live on the team’s laptop',
-      text: 'They work while the live demo is open: daily 18:00–23:00 Vietnam time (UTC+7; 11:00–16:00 UTC) until 30 November 2026. The photos are the team’s own samples, and nothing is written to disk. The lab pages are in English.',
+      text: 'They work while the live demo is online (the status below shows it). The photos are the team’s own samples, and nothing is written to disk. The lab pages are in English.',
     },
     board: {
       title: 'Calibrate with the board, draw litter on the map',
@@ -214,11 +214,11 @@ const en = {
     hero: {
       eyebrow: 'Try the AI',
       title: 'See how the AI reads litter',
-      lead: 'Pick a sample photo, or upload your own during the live demo window, to see how the AI reads litter.',
+      lead: 'Pick a sample photo, or upload your own while the live demo is online, to see how the AI reads litter.',
     },
     banner: {
-      title: 'Samples any time, your own photo in the live window',
-      text: 'Sample results are computed in advance. Your own photo is analysed on request by a computer run by the CleanSight team. The live demo is open daily 18:00–23:00 Vietnam time (UTC+7; 11:00–16:00 UTC) until 30 November 2026.',
+      title: 'Samples any time, your own photo while the live demo is online',
+      text: 'Sample results are computed in advance. Your own photo is analysed on request by a computer run by the CleanSight team. The live demo is online whenever that computer is switched on; the status chip shows whether it is.',
     },
     upload: {
       title: 'Choose a photo',
@@ -235,7 +235,7 @@ const en = {
       },
       onlineNote: 'Your browser shrinks the photo and removes its metadata (such as location) before sending it.',
       offlineNote:
-        'The live demo is open daily 18:00–23:00 Vietnam time (UTC+7) until 30 November 2026. Outside those hours, or if the host computer is off, only the sample photos work.',
+        'The live demo runs on a computer operated by the team. When that computer is off, only the sample photos work.',
       preparing: 'Preparing your photo…',
       analysing: 'Analysing your photo…',
       badge: 'Your photo',

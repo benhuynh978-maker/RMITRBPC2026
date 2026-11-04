@@ -5,7 +5,7 @@
 "use strict";
 // ====== Tiện ích chung ======
 const $ = (id) => document.getElementById(id);
-const MSG_MANG = 'Cannot reach the live demo. It is open daily 18:00–23:00 Vietnam time (UTC+7) until 30 November 2026, when the host laptop is on.';
+const MSG_MANG = 'Cannot reach the live demo. It runs on the team laptop and is only available while that laptop is on; please try again later.';
 const DEFAULT_LATLNG = [10.7769, 106.7009];
 const ARROW_LEN_M = 2;        // mũi tên dài 2 m ngoài đời thật
 const NUDGE_M = 0.05;         // nút nhích 5 cm

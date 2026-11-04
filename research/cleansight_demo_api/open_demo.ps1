@@ -4,7 +4,7 @@
 #   powershell -ExecutionPolicy Bypass -File open_demo.ps1 -Origin https://ten-site.netlify.app
 #
 # -Origin la dia chi trang web tren Netlify (khong co dau / o cuoi). Day la nguon DUY NHAT duoc phep goi dich vu.
-# Moi ngay: chay script nay luc ~17:45, va close_demo.ps1 luc 23:00.
+# Chay script nay khi muon mo demo (co the de mo ca ngay); close_demo.ps1 de dong khi khong can nua.
 param(
     [Parameter(Mandatory = $true)][string]$Origin,
     [string]$Python = "C:\Users\ASUS\Desktop\SSC\.venv\Scripts\python.exe",
@@ -64,5 +64,5 @@ tailscale funnel status
 Write-Host ""
 Write-Host "Viec can lam:" -ForegroundColor Yellow
 Write-Host "  - Kiem tra tu dien thoai dung 4G (khong dung Wi-Fi nha): mo trang web, muc 'Live demo: online'."
-Write-Host "  - Luc 23:00 chay close_demo.ps1."
+Write-Host "  - Khi khong can nua chay close_demo.ps1 (hoac de mo ca ngay: nho laptop cam sac, tat che do ngu)."
 Write-Host "  - Cong 8444 (demo cu, co LUU anh) van dang mo neu ban chua tat: tailscale funnel --https=8444 off"

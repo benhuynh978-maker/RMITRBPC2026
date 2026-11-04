@@ -59,7 +59,7 @@ Where the page looks for the service: `DEMO_API_URL` in `src/lib/config.js` (def
 
 ## Calibration lab (judges' hands-on)
 
-Both labs use the **same live service** and the same window (daily 18:00–23:00 Vietnam time until 30 Nov 2026); the photos are fixed samples held by the service (`research/cleansight_demo_api/lab_samples/`, thumbnails in `public/img/lab/`), judges cannot upload. State (calibration, observations) lives in the service's RAM per browser tab (`X-Lab-Session`) and expires after 30 min idle.
+Both labs use the **same live service** and the same availability (online only while the host laptop runs the service; the status chip shows it); the photos are fixed samples held by the service (`research/cleansight_demo_api/lab_samples/`, thumbnails in `public/img/lab/`), judges cannot upload. State (calibration, observations) lives in the service's RAM per browser tab (`X-Lab-Session`) and expires after 30 min idle.
 
 - `/hieu-chinh/cong` is React: `RoiCanvas`, `RoiToolbar` and `roiGeometry.ts` are copied unchanged from the ssc-v2 drain UI; "Measure" posts the polygon to `/api/lab/drain/measure`.
 - `/lab/board/` is a copy of the exp02 web test page (`index.html`, `lab.css`, `lab.js`) adapted to CSP (no inline script, Leaflet vendored in `vendor/leaflet`, OpenStreetMap France tiles) and to the sample/session API. **`public/lab/board/lab-config.js` holds the service address and must match `src/lib/config.js` and `connect-src` in `_headers`.** It is a plain page, so it does not follow the VI|EN toggle.

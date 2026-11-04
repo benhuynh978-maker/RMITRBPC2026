@@ -76,7 +76,7 @@ export async function labPost(path, body, outer) {
 export function labErrorText(err) {
   if (err instanceof DemoError) {
     if (err.code === 'timeout') return 'The measurement took too long. Please try again.';
-    if (err.code === 'network') return 'Could not reach the live demo. It is open daily 18:00–23:00 Vietnam time (UTC+7) until 30 November 2026.';
+    if (err.code === 'network') return 'Could not reach the live demo. It may be switched off; please try again later.';
     return 'The live demo ran into a problem. Please try again.';
   }
   const { status, data, retryAfter } = err;
