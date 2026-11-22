@@ -74,12 +74,14 @@ Hai nhóm giới hạn theo IP riêng cho phòng thử (xem bảng cấu hình),
 ### Phòng camera (`cam.py`): camera nhà gửi ảnh về, LƯU ảnh, vẽ rác lên bản đồ
 **Khác hẳn phần trên: phòng này GHI ẢNH RA ĐĨA** (camera nhà để thử, chủ dự án đã chấp nhận). Ảnh nằm trong thư mục riêng **ngoài repo** (mặc định `%USERPROFILE%\CleanSightCamData`, đổi bằng `CLEANSIGHT_CAM_DATA_DIR`; dịch vụ từ chối khởi động nếu thư mục nằm trong repo) nên không thể lọt vào Git/Netlify. Không giới hạn thời gian/dung lượng lưu: ổ đầy thì dịch vụ báo `507 storage_failed`, không tự xoá gì. Ảnh 1080p mỗi phút một ảnh ≈ 0,3–0,5 GB mỗi ngày.
 
-Chỉ bật khi đặt **cả hai** biến (xem `cam.env.example`; file thật `cam.env` đã bị `.gitignore`, mã truy cập **không nằm trong repo**):
+Chỉ bật khi đặt **cả hai** biến. Cách làm: sao chép `cam.env.example` thành `cam.env` (cùng thư mục, đã bị `.gitignore`, mã truy cập **không nằm trong repo**) và điền giá trị; `run_service.ps1` (được `open_demo.ps1` gọi) tự nạp `cam.env` khi khởi động. Trang web: `https://<site>/lab/camera/` (không có liên kết từ trang nào, cần mã truy cập).
 | Biến | Ý nghĩa |
 |---|---|
 | `CLEANSIGHT_CAM_ACCESS_CODE` | Mã truy cập người dùng nhập ở trang camera. Không giới hạn số lần thử (theo yêu cầu): mã ngắn/chỉ gồm số có thể bị dò ra từ Internet |
 | `CLEANSIGHT_CAM_INGEST_KEY` | Khoá riêng (≥ 16 ký tự) của nơi gửi ảnh (cầu nối hoặc camera). Khác với mã truy cập |
 | `CLEANSIGHT_CAM_DATA_DIR` | Thư mục lưu ảnh (ngoài repo) |
+
+**Trỏ camera tới hệ thống:** camera (hoặc một chương trình trung gian) gửi `POST https://<địa chỉ Funnel>/api/cam/ingest`, thân là JPEG thô, `Content-Type: image/jpeg`, header `X-Cam-Key: <CLEANSIGHT_CAM_INGEST_KEY>`. Ví dụ thử từ máy khác: `curl -X POST --data-binary @anh.jpg -H "Content-Type: image/jpeg" -H "X-Cam-Key: ..." https://<địa chỉ>/api/cam/ingest`. Chưa kiểm với camera IMOU thật; nếu camera không gửi được kiểu này (chỉ HTTP, không đặt được header, hay chỉ FTP) thì điểm nhận ảnh cần mở rộng.
 
 Luồng: nơi gửi ảnh → `POST /api/cam/ingest` (header `X-Cam-Key`, thân là **JPEG thô**) → lưu ảnh gốc **nguyên byte** → chạy model (chung hàng đợi/khoá với `/api/analyze`; bận thì giữ ảnh gốc, ghi `status: busy`) → lưu ảnh khoanh + JSON. Trình duyệt: `POST /api/cam/login {code}` → `token` (RAM, sống 8 giờ, tối đa 50) → gửi kèm header `X-Cam-Token` cho mọi lời gọi đọc.
 

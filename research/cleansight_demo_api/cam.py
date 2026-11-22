@@ -312,7 +312,7 @@ def register(app, srv, settings: Optional[Settings] = None) -> bool:
             "R": res["R"], "t": res["t"], "camera_matrix": res["camera_matrix"], "image_size": res["image_size"],
             "diagonal_fov_deg": res["diagonal_fov_deg"], "side_px_min": res["side_px_min"],
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "provisional": False, "source": f"board detected in camera frame {pend['frame_id']}",
+            "provisional": False, "source": f"Board detected in camera frame {pend['frame_id']}.",
         }
         try:
             with calib_lock:

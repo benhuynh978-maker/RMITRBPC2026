@@ -13,6 +13,7 @@ Built with React 19, Vite and React Router, plain CSS. Static site: no backend, 
 | `/hieu-chinh` | Calibration lab: landing page with the two hands-on labs (nav item "Calibration lab") |
 | `/hieu-chinh/cong` | Drain lab: outline a drain zone on a sample photo and measure litter coverage (English only) |
 | `/lab/board/` | Board lab: ArUco board calibration, then litter drawn on a map (static page in `public/lab/board/`, English only) |
+| `/lab/camera/` | Camera lab: **private**, access code required; the team's home camera sends frames that are stored on the team laptop and drawn on a map (static page in `public/lab/camera/`, English only). Not linked from any page or the nav, `noindex` |
 
 Old paths `/cong-nghe`, `/thu-nghiem` and `/lien-he` redirect to the matching section of the home page.
 
@@ -65,6 +66,14 @@ Both labs use the **same live service** and the same availability (online only w
 - `/lab/board/` is a copy of the exp02 web test page (`index.html`, `lab.css`, `lab.js`) adapted to CSP (no inline script, Leaflet vendored in `vendor/leaflet`, OpenStreetMap France tiles) and to the sample/session API. **`public/lab/board/lab-config.js` holds the service address and must match `src/lib/config.js` and `connect-src` in `_headers`.** It is a plain page, so it does not follow the VI|EN toggle.
 - Photos in `public/img/lab/` show the team's own scenes (a HUTECH bench label and shop logos are visible in the drain photo; the owner accepted this).
 
+## Camera lab (private, home camera)
+
+`/lab/camera/` is a static page (`public/lab/camera/`: `index.html`, `camera.css`, `cam.js`) that reuses the Board lab styles, Leaflet and the service address (`/lab/board/lab-config.js`). It is **not** part of the judges' labs: nothing links to it, it is `noindex`, and the service refuses everything without the access code.
+
+- The access code is checked **on the service** (`POST /api/cam/login`, see `research/cleansight_demo_api/README.md`); the page and the repo contain no code. The page keeps only a short-lived token in `sessionStorage` and sends it in the `X-Cam-Token` header; frames are fetched with that header and shown through `blob:` URLs (hence `blob:` in `img-src` in `public/_headers`).
+- Frames are sent by the camera (or a bridge) to the service, which **stores them on the team laptop** (outside the repo) and outlines trash on every new one. The page polls every 10 s, shows the newest frame (or any frame from the history), draws its regions on the map, and can calibrate the camera from a frame that shows the printed ArUco board. Until then a TEMPORARY calibration is used and the page says so.
+- Not verified here: a real camera. The page was checked in a browser with frames posted by a script.
+
 ## Sample results (Try the AI)
 
 Every number, outlined photo and note on `/thu-ai` comes from `src/data/samples.json` and `public/img/samples/`, generated offline by `research/cleansight_samples/make_samples.py` (model `baseline_v1_rev2`, single-photo method, no drain zone). Do not edit `samples.json` by hand: change the source photos and re-run the script. The text notes about each sample (what the model got wrong) are in `src/i18n/*.js` under `tryAi.samples` and must be re-checked against the annotated image whenever a sample is regenerated. Sample photos must be the team's own, with no people, vehicle plates or logos.
@@ -77,7 +86,7 @@ src/
   main.jsx           fonts + CSS
   i18n/              dictionaries and provider
   components/        Nav, Footer, Section, cards, diagram, references, scroll manager…
-  pages/             Home, TryAI, Lab, DrainLab, NotFound
+  pages/             Home, TryAI, Lab, DrainLab, NotFound  (/lab/board and /lab/camera are static pages in public/lab/)
   components/lab/    RoiCanvas, RoiToolbar (copied from ssc-v2)
   lib/               contact email, references, nav items
   data/              samples.json (generated, see above)

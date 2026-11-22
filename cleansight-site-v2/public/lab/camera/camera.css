@@ -1,0 +1,22 @@
+/* Camera lab: bổ sung cho /lab/board/lab.css (dùng chung giao diện với Board lab). */
+#login { position: fixed; inset: 0; z-index: 6000; display: flex; align-items: center; justify-content: center; padding: 16px; background: #1f2d3d; }
+#login.hide { display: none; }
+#login form { width: 100%; max-width: 380px; padding: 22px; background: #fff; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+#login h1 { margin: 0 0 6px 0; font-size: 22px; }
+#login input[type=password] { width: 100%; padding: 8px 10px; font-size: 16px; border: 1px solid #8a94a3; border-radius: 5px; }
+
+#topbar .lock { margin-left: auto; padding: 3px 12px; font-size: 14px; }
+.step-body label { cursor: pointer; }
+#frame-status { font-size: 14px; }
+.kind.on { background: #2563eb; color: #fff; }
+.thumb.big { max-height: 340px; width: 100%; object-fit: contain; background: #111827; }
+#frame-sum .msg { margin-top: 8px; }
+
+#hist-list { margin-top: 6px; max-height: 360px; overflow-y: auto; }
+.hist-item { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 4px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 14px; }
+.hist-item:hover { background: #eef3ff; }
+.hist-item.sel { background: #e6effd; box-shadow: inset 3px 0 0 #2563eb; }
+.hist-item .when { font-weight: 600; }
+.hist-item .st { color: #4a5565; }
+.hist-item .st.bad { color: #8a1108; font-weight: 600; }
+.hist-item .tmp { color: #6b4600; font-weight: 600; }

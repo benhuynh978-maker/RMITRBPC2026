@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Camera lab: home camera to trash on map | CleanSight</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
+<link rel="stylesheet" href="/lab/board/vendor/leaflet/leaflet.css" />
+<link rel="stylesheet" href="/lab/board/lab.css" />
+<link rel="stylesheet" href="camera.css" />
+</head>
+<body>
+
+<!-- Màn nhập mã truy cập: mã được kiểm Ở MÁY CHỦ; trang này không chứa mã -->
+<div id="login" role="dialog" aria-modal="true" aria-labelledby="login-title">
+  <form id="login-form" autocomplete="off">
+    <h1 id="login-title">Camera lab</h1>
+    <p class="hint">Private page. Enter the access code to see the camera.</p>
+    <label class="fl" for="code">Access code</label>
+    <input type="password" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" />
+    <div class="row"><button type="submit" id="btn-login">Unlock</button></div>
+    <div id="login-msg" role="alert"></div>
+    <p class="hint"><a href="/hieu-chinh">&larr; Back to CleanSight</a></p>
+  </form>
+</div>
+
+<div id="topbar">
+  <a href="/hieu-chinh">&larr; CleanSight</a>
+  <b>Camera lab: home camera &rarr; trash on map</b>
+  <span>Live demo: <span id="st-server" class="chip wait">checking…</span></span>
+  <span>AI model: <span id="st-model" class="chip wait">…</span></span>
+  <span>Calibration: <span id="st-calib" class="chip wait">…</span></span>
+  <span>Latest frame: <span id="st-frame" class="chip wait">…</span></span>
+  <button type="button" id="btn-lock" class="sec lock">Lock</button>
+</div>
+
+<div id="main">
+  <div id="map"></div>
+  <div id="panel">
+
+    <!-- 1: khung hình mới nhất -->
+    <section class="step open" id="s1">
+      <div class="step-head" data-step="s1"><span class="step-num">1</span><span class="step-title">Live frame from the camera</span><span class="step-badge" id="b1"></span></div>
+      <div class="step-body">
+        <div id="prov-warn" class="msg warn" style="display:none"></div>
+        <div id="frame-status" class="hint">Waiting for the first frame…</div>
+        <div class="row">
+          <label><input type="checkbox" id="follow" checked /> Show the newest frame automatically</label>
+        </div>
+        <div class="row">
+          <button type="button" id="btn-refresh" class="sec">Refresh</button>
+          <button type="button" id="btn-live" class="sec" style="display:none">Back to the newest frame</button>
+        </div>
+        <div class="row" id="kind-row">
+          <button type="button" class="sec kind on" data-kind="annotated">Outlined by the AI</button>
+          <button type="button" class="sec kind" data-kind="original">Original photo</button>
+        </div>
+        <img id="frame-img" class="thumb big" alt="Camera frame (click to enlarge)" title="Click to enlarge" style="display:none" />
+        <div id="frame-sum"></div>
+      </div>
+    </section>
+
+    <!-- 2: lịch sử -->
+    <section class="step" id="s2">
+      <div class="step-head" data-step="s2"><span class="step-num">2</span><span class="step-title">History</span><span class="step-badge" id="b2"></span></div>
+      <div class="step-body">
+        <p class="hint">Every frame the camera sent is stored on the team laptop. Click one to see it and its trash regions on the map.</p>
+        <div id="hist-list"><span class="hint">No frames yet.</span></div>
+        <div class="row"><button type="button" id="btn-older" class="sec" style="display:none">Load older frames</button></div>
+      </div>
+    </section>
+
+    <!-- 3: hiệu chỉnh -->
+    <section class="step" id="s3">
+      <div class="step-head" data-step="s3"><span class="step-num">3</span><span class="step-title">Calibration</span><span class="step-badge" id="b3"></span></div>
+      <div class="step-body">
+        <div id="calib-summary" class="msg info">Loading…</div>
+        <p class="hint">Calibration tells the system where the camera is, so trash seen in a frame can be drawn on the map. Until this camera is calibrated, a TEMPORARY calibration is used and positions on the map are only for trying the drawing.</p>
+        <p class="hint">To calibrate: put the printed ArUco board on the ground in the camera view, wait for a frame that shows it clearly, then detect it below.</p>
+        <label class="fl" for="f-size">Real board side length (mm)</label>
+        <input type="number" id="f-size" value="250" min="10" step="any" />
+        <label class="fl" for="f-fov">Lens field of view (degrees, optional)</label>
+        <input type="number" id="f-fov" placeholder="leave blank" min="10" max="170" step="any" />
+        <div class="hint">Blank = 66° is used. Enter the diagonal field of view from the camera's specification if you know it.</div>
+        <div class="row"><button type="button" id="btn-detect">Detect the board in the frame shown</button></div>
+        <div id="msg-cal"></div>
+        <div id="r1" style="display:none">
+          <img id="r1-img" class="thumb" alt="Detected board (click to enlarge)" title="Click to enlarge" />
+          <div class="hint">Red = +X (to the right of +Y), blue = +Y.</div>
+          <div style="margin-top:8px">Board size: <b id="r1-px"></b> <span id="r1-tag" class="tag"></span></div>
+          <div style="margin-top:4px">Field of view: <b id="r1-fov"></b> <span id="r1-src"></span></div>
+          <div style="margin-top:4px">Estimated camera height: <b id="r1-h"></b> <span class="hint">(compare with your ruler measurement)</span></div>
+          <ul id="r1-warn" class="warn-list" style="display:none"></ul>
+        </div>
+        <div id="edit-block" style="display:none">
+          <p class="hint" style="margin-top:12px">Click the map where the board is placed; drag the blue arrow to set the direction of the board's '+Y' edge (the blue +Y arrow in the image above). The green area is what the camera sees on the ground.</p>
+          <div>+Y edge heading: <span class="read" id="az-val">—</span> <span class="hint">(0° = North, 90° = East)</span></div>
+          <div class="hint" id="pos-val">Position: —</div>
+          <div class="row">
+            <span class="pad">
+              <span></span><button type="button" data-dn="1" data-de="0" title="Nudge 5 cm north">▲</button><span></span>
+              <button type="button" data-dn="0" data-de="-1" title="Nudge 5 cm west">◀</button>
+              <span></span>
+              <button type="button" data-dn="0" data-de="1" title="Nudge 5 cm east">▶</button>
+              <span></span><button type="button" data-dn="-1" data-de="0" title="Nudge 5 cm south">▼</button><span></span>
+            </span>
+            <span class="rot">
+              <button type="button" data-rot="-1" title="Rotate 1° counter-clockwise">⟲</button>
+              <button type="button" data-rot="1" title="Rotate 1° clockwise">⟳</button>
+            </span>
+            <span class="hint">nudge 5 cm / rotate 1°</span>
+          </div>
+          <div id="fp-msg"></div>
+          <div class="row">
+            <button type="button" id="btn-save">Save calibration</button>
+            <button type="button" id="btn-cancel" class="sec">Cancel</button>
+          </div>
+          <div id="save-msg"></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="note"><b>Experimental:</b> the frames come from the team's own home camera and are stored on the team's laptop (not in the cloud); only people with the access code can see them. Results hold only for a fixed camera and flat ground; tall objects are drawn enlarged; the AI model may miss trash and may outline things that are not trash. A new frame arrives about once a minute, so this is not a live video.</div>
+  </div>
+</div>
+
+<div id="lb"><img id="lb-img" alt="" /></div>
+<div id="toast" role="status"></div>
+<script src="/lab/board/lab-config.js"></script>
+<script src="/lab/board/vendor/leaflet/leaflet.js"></script>
+<script src="cam.js"></script>
+</body>
+</html>
