@@ -196,7 +196,7 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "X-Lab-Session"],
+    allow_headers=["Content-Type", "X-Lab-Session", "X-Cam-Token"],
     expose_headers=["Retry-After"],  # không khai báo thì trình duyệt không cho trang đọc Retry-After của yêu cầu khác nguồn
     max_age=600,
 )
@@ -332,3 +332,8 @@ async def analyze_endpoint(request: Request):
 import lab  # noqa: E402
 
 lab.register(app, sys.modules[__name__])
+
+# Phòng camera (camera nhà gửi ảnh, lưu ảnh, có mã truy cập): xem cam.py. Chỉ bật khi đặt CLEANSIGHT_CAM_ACCESS_CODE + CLEANSIGHT_CAM_INGEST_KEY.
+import cam  # noqa: E402
+
+cam.register(app, sys.modules[__name__])

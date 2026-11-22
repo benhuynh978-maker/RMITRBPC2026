@@ -71,10 +71,34 @@ Chỉ dùng ảnh mẫu nằm trong `lab_samples/` (giám khảo không tải �
 
 Hai nhóm giới hạn theo IP riêng cho phòng thử (xem bảng cấu hình), dùng chung hàng đợi/khoá model với `/api/analyze`.
 
+### Phòng camera (`cam.py`): camera nhà gửi ảnh về, LƯU ảnh, vẽ rác lên bản đồ
+**Khác hẳn phần trên: phòng này GHI ẢNH RA ĐĨA** (camera nhà để thử, chủ dự án đã chấp nhận). Ảnh nằm trong thư mục riêng **ngoài repo** (mặc định `%USERPROFILE%\CleanSightCamData`, đổi bằng `CLEANSIGHT_CAM_DATA_DIR`; dịch vụ từ chối khởi động nếu thư mục nằm trong repo) nên không thể lọt vào Git/Netlify. Không giới hạn thời gian/dung lượng lưu: ổ đầy thì dịch vụ báo `507 storage_failed`, không tự xoá gì. Ảnh 1080p mỗi phút một ảnh ≈ 0,3–0,5 GB mỗi ngày.
+
+Chỉ bật khi đặt **cả hai** biến (xem `cam.env.example`; file thật `cam.env` đã bị `.gitignore`, mã truy cập **không nằm trong repo**):
+| Biến | Ý nghĩa |
+|---|---|
+| `CLEANSIGHT_CAM_ACCESS_CODE` | Mã truy cập người dùng nhập ở trang camera. Không giới hạn số lần thử (theo yêu cầu): mã ngắn/chỉ gồm số có thể bị dò ra từ Internet |
+| `CLEANSIGHT_CAM_INGEST_KEY` | Khoá riêng (≥ 16 ký tự) của nơi gửi ảnh (cầu nối hoặc camera). Khác với mã truy cập |
+| `CLEANSIGHT_CAM_DATA_DIR` | Thư mục lưu ảnh (ngoài repo) |
+
+Luồng: nơi gửi ảnh → `POST /api/cam/ingest` (header `X-Cam-Key`, thân là **JPEG thô**) → lưu ảnh gốc **nguyên byte** → chạy model (chung hàng đợi/khoá với `/api/analyze`; bận thì giữ ảnh gốc, ghi `status: busy`) → lưu ảnh khoanh + JSON. Trình duyệt: `POST /api/cam/login {code}` → `token` (RAM, sống 8 giờ, tối đa 50) → gửi kèm header `X-Cam-Token` cho mọi lời gọi đọc.
+
+| Đường dẫn | Việc |
+|---|---|
+| `POST /api/cam/login` | Mã truy cập → token |
+| `POST /api/cam/ingest` | Nhận một ảnh JPEG (≤ 8 MB, ≤ 40 triệu điểm ảnh, kiểm tra trước khi giải mã) |
+| `GET /api/cam/latest` | Khung mới nhất (kèm vùng rác) + hiệu chỉnh đang dùng |
+| `GET /api/cam/frames?limit=&before=` | Lịch sử, mới nhất trước (không kèm vùng) |
+| `GET /api/cam/frames/{id}`, `…/{id}/image?kind=original\|annotated` | Một khung / ảnh gốc hoặc ảnh khoanh |
+| `GET /api/cam/calibration`, `POST …/detect`, `POST …/save`, `GET /api/cam/footprint` | Hiệu chỉnh từ một khung hình có tờ bảng ArUco |
+
+Hiệu chỉnh ban đầu là **TẠM** (dò từ ảnh bảng mẫu, không phải của camera này; mọi khung ghi `provisional_calibration: true`): vị trí trên bản đồ chỉ để xem thử, không chính xác. Hiệu chỉnh thật bằng một khung có tờ bảng, thì các khung **sau đó** dùng hiệu chỉnh thật (khung cũ không bị sửa). Khung khác tỉ lệ với ảnh hiệu chỉnh vẫn được lưu và khoanh nhưng không đặt lên bản đồ. Ảnh ban đêm/hồng ngoại chưa được thử với model.
+
 ## Kiểm thử
 ```bash
 python -B test_demo_api.py        # 45 kiểm tra, có chạy model thật
 python -B test_lab_api.py         # 70 kiểm tra phòng hiệu chỉnh: luồng, cô lập phiên, không ghi đĩa, giới hạn, CORS
+python -B test_cam_api.py         # 77 kiểm tra phòng camera: mã truy cập, ingest, lưu ảnh, hiệu chỉnh, vẽ rác (thư mục tạm ngoài repo)
 ```
 Kiểm: định dạng/kích thước/ảnh hỏng, ảnh "bom" điểm ảnh không bị giải mã, tần suất (kể cả giả mạo `X-Forwarded-For`), CORS, **không ghi gì ra đĩa**, không log IP, khởi động thất bại khi cấu hình CORS sai.
 

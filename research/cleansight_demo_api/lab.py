@@ -127,6 +127,7 @@ def _num(x) -> Optional[float]:
 # Giới hạn tần suất (đối tượng được tạo trong register(), vì cần lớp RateLimiter của server.py)
 # ---------------------------------------------------------------------------------------
 LIGHT = None   # mọi lời gọi lab
+SLOT = None    # lớp giữ chỗ hàng chờ + khoá model (đặt trong register(); phòng camera dùng chung)
 HEAVY = None   # lời gọi chạy model
 
 
@@ -287,6 +288,131 @@ def _en_quality_warning(text: str) -> str:
     return "Calibration quality warning."
 
 
+def detect_board_pose(path: Path, bgr: np.ndarray, size_mm: float, fov_in: Optional[float]):
+    """Dò bảng ArUco trong ảnh `path` (bgr = cùng ảnh đã đọc) và giải tư thế camera.
+    Trả (kết quả để lưu làm hiệu chỉnh, phần còn lại của phản hồi); ném LabError nếu không dò được / bảng quá nhỏ.
+    Dùng chung cho phòng thử (ảnh mẫu) và phòng camera (khung hình từ camera)."""
+    h, w = bgr.shape[:2]
+    warnings = []
+    if fov_in is not None:
+        fov, fov_source = fov_in, "input"
+    else:
+        fov, fov_source = exp_config.DIAGONAL_FOV_DEG, "default"
+        warnings.append(
+            f"Could not read the focal length from the photo: using the default field of view of "
+            f"{exp_config.DIAGONAL_FOV_DEG:.0f}° (ESP32 camera). Phones are usually about 70–85°; if yours differs, "
+            f"region positions and sizes will be off. Enter the field of view (degrees, diagonal) if you know it."
+        )
+    try:
+        result = calibrate_aruco.detect_and_solve_pnp(path, exp_config.MARKER_ID, size_mm, diagonal_fov_deg=fov)
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "Không tìm thấy marker" in msg:
+            text = ("No ArUco board found in the photo. Capture the whole board clearly, unobstructed, "
+                    "without glare and in good light.")
+        elif "không có id" in msg:
+            text = "The photo has an ArUco code but it is not the calibration board (ID 0 of DICT_4X4_50 is required)."
+        else:
+            text = "Could not solve the camera position from the board. Please retake a sharper photo."
+        raise LabError(422, text, "board_not_found", side_px_min=None, overlay_jpg_b64=None) from None
+
+    q = result["quality"]
+    side_min = float(q["marker_side_px_min"])
+    overlay_b64 = imaging.encode_jpg_b64(
+        imaging.draw_overlay(bgr, result["R"], result["t"], result["camera_matrix"], size_mm / 1000.0))
+    if calib_quality.is_too_small(side_min):
+        raise LabError(
+            422,
+            f"Board too small in the photo (shortest side {math.floor(side_min * 10) / 10:.1f} px, minimum "
+            f"{calib_quality.MIN_SIDE_PX:.1f} px). Move closer or use a larger board.",
+            "board_too_small", side_px_min=_num(side_min), overlay_jpg_b64=overlay_b64)
+    pending_result = {
+        "R": result["R"].tolist(), "t": result["t"].tolist(), "camera_matrix": result["camera_matrix"].tolist(),
+        "image_size": [int(w), int(h)], "reproj_error_rms_px": float(result["reproj_error_rms_px"]),
+        "side_px_min": side_min, "diagonal_fov_deg": float(fov),
+    }
+    payload = {
+        "side_px_min": _num(side_min), "side_px_mean": _num(q["marker_side_px_mean"]),
+        "fov_deg": float(fov), "fov_source": fov_source, "focal_35mm": None,
+        "warnings": warnings + [_en_quality_warning(x) for x in q["warnings"]],
+        "camera_height_m_est": _num(q["camera_height_m_est"]),
+        "image_size": [int(w), int(h)], "overlay_jpg_b64": overlay_b64,
+    }
+    return pending_result, payload
+
+
+def build_footprint(src: dict, lat0: float, lon0: float, az0: float, rng: float) -> dict:
+    """Vùng mặt đất camera nhìn thấy (GeoJSON). `src` có R, t, camera_matrix, image_size."""
+    _check_latlon(lat0, lon0)
+    if not math.isfinite(az0):
+        raise LabError(422, "Invalid azimuth.", "invalid_value")
+    rng = 12.0 if not math.isfinite(rng) else min(50.0, max(1.0, rng))
+    az = az0 % 360.0
+    calib = {"camera_id": CAMERA_ID, "marker_latlon": [lat0, lon0], "azimuth_deg": az,
+             "R": src["R"], "t": src["t"], "camera_matrix": src["camera_matrix"], "image_size": src["image_size"]}
+    w, h = calib["image_size"]
+    poly_marker = pm.ground_footprint_polygon(calib, (w, h), rng)
+    if len(poly_marker) < 3:
+        raise LabError(422, "The camera does not see the ground within this range.", "no_ground")
+    e, n = pm.marker_xy_to_enu(poly_marker[:, 0], poly_marker[:, 1], az)
+    ring = pm._ring_m_to_lonlat(pm._oriented(np.stack([e, n], axis=1), True), lat0, lon0)
+    cam = pm.camera_position_geojson(calib)
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "properties": {"kind": "footprint"}, "geometry": {"type": "Polygon", "coordinates": [ring]}},
+            {"type": "Feature", "properties": {"kind": "marker"}, "geometry": {"type": "Point", "coordinates": [lon0, lat0]}},
+            {"type": "Feature", "properties": {"kind": "camera", "height_m": float(cam["properties"]["height_m"])},
+             "geometry": cam["geometry"]},
+        ],
+    }
+
+
+def run_trash_model(bgr: np.ndarray):
+    """Chạy model trên một ảnh: trả (mask hợp nhất của lớp Trash, danh sách độ tin cậy, ảnh đã khoanh).
+    NGƯỜI GỌI phải đang giữ chỗ trong hàng chờ + srv.model_lock (xem SLOT)."""
+    import analysis
+    h, w = bgr.shape[:2]
+    r = analysis.predict(bgr)
+    union = np.zeros((h, w), dtype=bool)
+    confs = []
+    if r.masks is not None and r.boxes is not None and len(r.boxes) > 0:
+        mask_data = r.masks.data.cpu().numpy()
+        classes = r.boxes.cls.cpu().numpy().astype(int)
+        conf_arr = r.boxes.conf.cpu().numpy()
+        for i in range(mask_data.shape[0]):
+            if int(classes[i]) != TRASH_CLASS_ID:
+                continue
+            m = mask_data[i] > MASK_THRESHOLD
+            if m.shape != (h, w):
+                m = cv2.resize(m.astype(np.uint8), (w, h), interpolation=cv2.INTER_NEAREST) > 0
+            union |= m
+            confs.append(float(conf_arr[i]))
+    return union, confs, r.plot()
+
+
+def regions_from_mask(union: np.ndarray, confs: list, calib: dict) -> dict:
+    """Mask rác -> vùng trên bản đồ theo `calib`. Trả features, total_area_m2, n_regions, cảnh báo, ..."""
+    mean_conf = round(float(np.mean(confs)), 4) if confs else None
+    stats: dict = {}
+    features, total_m2, dropped = mask_to_region_features(union, calib, mean_conf, stats)
+    features = board_coords.annotate_regions(features, calib)
+    warnings = []
+    if not confs or not union.any():
+        warnings.append("No trash detected in the image.")
+    elif not features:
+        warnings.append("The detected trash regions were too small or not on the ground, so they were ignored.")
+    if stats.get("small_ignored"):
+        warnings.append(f"Ignored {stats['small_ignored']} very small region(s) (under {stats['min_area_px']:.0f} pixels, treated as noise).")
+    if dropped:
+        warnings.append(f"Dropped {dropped} outline point(s) that do not reach the ground (near or above the horizon).")
+    return {
+        "regions": {"type": "FeatureCollection", "features": features},
+        "total_area_m2": _num(total_m2) or 0.0, "n_regions": len(features),
+        "small_regions_ignored": int(stats.get("small_ignored", 0)), "dropped_points": int(dropped), "warnings": warnings,
+    }
+
+
 # ---------------------------------------------------------------------------------------
 # Đăng ký route
 # ---------------------------------------------------------------------------------------
@@ -323,6 +449,9 @@ def register(app, srv) -> None:
             srv.model_lock.release()
             srv.release_slot()
 
+    global SLOT
+    SLOT = _Slot
+
     def _saved(sess: _Session) -> Optional[dict]:
         return sess.saved
 
@@ -353,62 +482,16 @@ def register(app, srv) -> None:
         fov_in = _number_field(body, "fov_deg", None, 1.0, 179.0,
                                "Lens field of view (fov_deg) must be between 1 and 179 degrees.")
         bgr = _sample_bgr(sample_id)
-        h, w = bgr.shape[:2]
-        warnings = []
-        if fov_in is not None:
-            fov, fov_source = fov_in, "input"
-        else:
-            fov, fov_source = exp_config.DIAGONAL_FOV_DEG, "default"
-            warnings.append(
-                f"Could not read the focal length from the photo: using the default field of view of "
-                f"{exp_config.DIAGONAL_FOV_DEG:.0f}° (ESP32 camera). Phones are usually about 70–85°; if yours differs, "
-                f"region positions and sizes will be off. Enter the field of view (degrees, diagonal) if you know it."
-            )
-        try:
-            result = calibrate_aruco.detect_and_solve_pnp(
-                SAMPLES_DIR / sample["file"], exp_config.MARKER_ID, size_mm, diagonal_fov_deg=fov)
-        except RuntimeError as exc:
-            msg = str(exc)
-            if "Không tìm thấy marker" in msg:
-                text = ("No ArUco board found in the photo. Capture the whole board clearly, unobstructed, "
-                        "without glare and in good light.")
-            elif "không có id" in msg:
-                text = "The photo has an ArUco code but it is not the calibration board (ID 0 of DICT_4X4_50 is required)."
-            else:
-                text = "Could not solve the camera position from the board. Please retake a sharper photo."
-            raise LabError(422, text, "board_not_found", side_px_min=None, overlay_jpg_b64=None) from None
-
-        q = result["quality"]
-        side_min = float(q["marker_side_px_min"])
-        overlay_b64 = imaging.encode_jpg_b64(
-            imaging.draw_overlay(bgr, result["R"], result["t"], result["camera_matrix"], size_mm / 1000.0))
-        if calib_quality.is_too_small(side_min):
-            raise LabError(
-                422,
-                f"Board too small in the photo (shortest side {math.floor(side_min * 10) / 10:.1f} px, minimum "
-                f"{calib_quality.MIN_SIDE_PX:.1f} px). Move closer or use a larger board.",
-                "board_too_small", side_px_min=_num(side_min), overlay_jpg_b64=overlay_b64)
-
+        res, payload = detect_board_pose(SAMPLES_DIR / sample["file"], bgr, size_mm, fov_in)
         calibration_id = secrets.token_hex(8)
         with sess.lock:
             sess.pending[calibration_id] = {
-                "id": calibration_id, "sample_id": sample_id, "marker_size_mm": size_mm, "fov_source": fov_source,
-                "result": {
-                    "R": result["R"].tolist(), "t": result["t"].tolist(), "camera_matrix": result["camera_matrix"].tolist(),
-                    "image_size": [int(w), int(h)], "reproj_error_rms_px": float(result["reproj_error_rms_px"]),
-                    "side_px_min": side_min, "diagonal_fov_deg": float(fov),
-                },
+                "id": calibration_id, "sample_id": sample_id, "marker_size_mm": size_mm, "fov_source": payload["fov_source"],
+                "result": res,
             }
             while len(sess.pending) > MAX_PENDING:
                 sess.pending.popitem(last=False)
-        return {
-            "ok": True, "calibration_id": calibration_id, "sample_id": sample_id,
-            "side_px_min": _num(side_min), "side_px_mean": _num(q["marker_side_px_mean"]),
-            "fov_deg": float(fov), "fov_source": fov_source, "focal_35mm": None,
-            "warnings": warnings + [_en_quality_warning(x) for x in q["warnings"]],
-            "camera_height_m_est": _num(q["camera_height_m_est"]),
-            "image_size": [int(w), int(h)], "overlay_jpg_b64": overlay_b64,
-        }
+        return {"ok": True, "calibration_id": calibration_id, "sample_id": sample_id, **payload}
 
     # ---------------- 2) vùng mặt đất camera thấy ----------------
     @app.get("/api/lab/board/footprint")
@@ -434,29 +517,7 @@ def register(app, srv) -> None:
             lat0 = saved["marker_latlon"][0] if lat is None else lat
             lon0 = saved["marker_latlon"][1] if lon is None else lon
             az0 = saved.get("azimuth_deg", 0.0) if azimuth_deg is None else azimuth_deg
-        _check_latlon(lat0, lon0)
-        if not math.isfinite(az0):
-            raise LabError(422, "Invalid azimuth.", "invalid_value")
-        rng = 12.0 if not math.isfinite(max_range_m) else min(50.0, max(1.0, max_range_m))
-        az = az0 % 360.0
-        calib = {"camera_id": CAMERA_ID, "marker_latlon": [lat0, lon0], "azimuth_deg": az,
-                 "R": src["R"], "t": src["t"], "camera_matrix": src["camera_matrix"], "image_size": src["image_size"]}
-        w, h = calib["image_size"]
-        poly_marker = pm.ground_footprint_polygon(calib, (w, h), rng)
-        if len(poly_marker) < 3:
-            raise LabError(422, "The camera does not see the ground within this range.", "no_ground")
-        e, n = pm.marker_xy_to_enu(poly_marker[:, 0], poly_marker[:, 1], az)
-        ring = pm._ring_m_to_lonlat(pm._oriented(np.stack([e, n], axis=1), True), lat0, lon0)
-        cam = pm.camera_position_geojson(calib)
-        return {
-            "type": "FeatureCollection",
-            "features": [
-                {"type": "Feature", "properties": {"kind": "footprint"}, "geometry": {"type": "Polygon", "coordinates": [ring]}},
-                {"type": "Feature", "properties": {"kind": "marker"}, "geometry": {"type": "Point", "coordinates": [lon0, lat0]}},
-                {"type": "Feature", "properties": {"kind": "camera", "height_m": float(cam["properties"]["height_m"])},
-                 "geometry": cam["geometry"]},
-            ],
-        }
+        return build_footprint(src, lat0, lon0, az0, max_range_m)
 
     # ---------------- 3) lưu / đọc hiệu chỉnh ----------------
     @app.post("/api/lab/board/calibration/save")
@@ -514,56 +575,28 @@ def register(app, srv) -> None:
                                 f"(this photo {w}x{h}, calibration photo {cw}x{ch}).", "aspect_mismatch")
         t0 = time.perf_counter()
         with _Slot():
-            r = analysis.predict(bgr)
-            union = np.zeros((h, w), dtype=bool)
-            confs = []
-            if r.masks is not None and r.boxes is not None and len(r.boxes) > 0:
-                mask_data = r.masks.data.cpu().numpy()
-                classes = r.boxes.cls.cpu().numpy().astype(int)
-                conf_arr = r.boxes.conf.cpu().numpy()
-                for i in range(mask_data.shape[0]):
-                    if int(classes[i]) != TRASH_CLASS_ID:
-                        continue
-                    m = mask_data[i] > MASK_THRESHOLD
-                    if m.shape != (h, w):
-                        m = cv2.resize(m.astype(np.uint8), (w, h), interpolation=cv2.INTER_NEAREST) > 0
-                    union |= m
-                    confs.append(float(conf_arr[i]))
-            annotated = r.plot()
+            union, confs, annotated = run_trash_model(bgr)
         inference_ms = (time.perf_counter() - t0) * 1000.0
 
-        mean_conf = round(float(np.mean(confs)), 4) if confs else None
-        stats: dict = {}
-        features, total_m2, dropped = mask_to_region_features(union, calib, mean_conf, stats)
-        features = board_coords.annotate_regions(features, calib)
-        warnings = []
-        if not confs or not union.any():
-            warnings.append("No trash detected in the image.")
-        elif not features:
-            warnings.append("The detected trash regions were too small or not on the ground, so they were ignored.")
-        if stats.get("small_ignored"):
-            warnings.append(f"Ignored {stats['small_ignored']} very small region(s) (under {stats['min_area_px']:.0f} pixels, treated as noise).")
-        if dropped:
-            warnings.append(f"Dropped {dropped} outline point(s) that do not reach the ground (near or above the horizon).")
+        rp = regions_from_mask(union, confs, calib)
+        regions, total_m2, warnings = rp["regions"], rp["total_area_m2"], rp["warnings"]
         obs_id = secrets.token_hex(8)
-        regions = {"type": "FeatureCollection", "features": features}
-        total_m2 = _num(total_m2) or 0.0
         processed = datetime.now(timezone.utc)
         processing_ms = round((processed - received).total_seconds() * 1000.0, 1)
         obs = {
             "id": obs_id, "captured_at": processed.strftime("%Y-%m-%dT%H:%M:%SZ"), "processing_ms": processing_ms,
-            "n_instances": len(confs), "n_regions": len(features), "total_area_m2": total_m2, "regions": regions,
+            "n_instances": len(confs), "n_regions": rp["n_regions"], "total_area_m2": total_m2, "regions": regions,
         }
         with sess.lock:
             sess.observations.append(obs)
             del sess.observations[:-MAX_OBSERVATIONS]
         return {
             "ok": True, "observation_id": obs_id, "captured_at": obs["captured_at"], "processing_ms": processing_ms,
-            "n_instances": len(confs), "n_regions": len(features), "small_regions_ignored": int(stats.get("small_ignored", 0)),
+            "n_instances": len(confs), "n_regions": rp["n_regions"], "small_regions_ignored": rp["small_regions_ignored"],
             "regions": regions, "total_area_m2": total_m2,
             "annotated_jpg_b64": imaging.encode_jpg_b64(annotated, max_side=imaging.OVERLAY_MAX_SIDE_PX),
             "inference_ms": round(inference_ms, 1), "image_size": [int(w), int(h)], "warnings": warnings,
-            "dropped_points": int(dropped),
+            "dropped_points": rp["dropped_points"],
         }
 
     @app.get("/api/lab/board/observations")
