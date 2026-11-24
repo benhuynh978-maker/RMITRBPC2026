@@ -172,6 +172,19 @@
   }
 }
 
+/* Seven items (Vietnamese labels are longer): tighter spacing between the burger breakpoint and 1439 px so the bar stays inside the container. */
+@media (min-width: 1240px) and (max-width: 1439px) {
+  .nav__inner {
+    gap: var(--s-3);
+  }
+  .nav__link {
+    padding-inline: 8px;
+  }
+  .nav__actions {
+    gap: var(--s-2);
+  }
+}
+
 /* ================= Language toggle ================= */
 .lang {
   display: inline-flex;

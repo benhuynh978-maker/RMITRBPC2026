@@ -12,6 +12,7 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/pages.css';
 import './styles/lab.css';
+import './styles/city.css';
 
 import App from './App.jsx';
 
