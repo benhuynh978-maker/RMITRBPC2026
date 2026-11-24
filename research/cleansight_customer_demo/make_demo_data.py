@@ -241,7 +241,22 @@ def camera_geometry(site: dict, rng: np.random.Generator) -> dict:
     roi_center = drain + n_in * (roi_wid / 2.0 + 0.05)
     roi = np.array([roi_center + sx * (roi_len / 2.0) * u + sy * (roi_wid / 2.0) * n_in for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))])
     return {"height": height, "heading": heading, "foot": foot, "foot_area": shoelace(foot), "drain": drain, "n_in": n_in, "u": u,
-            "axis_deg": axis_deg, "roi": roi, "roi_center": roi_center}
+            "axis_deg": axis_deg, "roi": roi, "roi_center": roi_center, "R": r_mat, "t": -r_mat @ c_world, "K": k}
+
+
+def roi_to_image(geo: dict) -> list[list[float]]:
+    """Vùng cống (mét Đông-Bắc quanh chân camera) chiếu vào ảnh 640x480 bằng tư thế camera -> đa giác chuẩn hoá [0,1] (x phải, y xuống),
+    đúng dạng `drain_roi.polygon` mà dashboard/backend lưu."""
+    b = math.radians(geo["heading"])
+    e, n = geo["roi"][:, 0], geo["roi"][:, 1]
+    x = e * math.cos(b) - n * math.sin(b)
+    y = e * math.sin(b) + n * math.cos(b)
+    pts = np.stack([x, y, np.zeros_like(x)], axis=1)
+    cam = pts @ geo["R"].T + geo["t"]
+    uv = (cam @ geo["K"].T)
+    uv = uv[:, :2] / uv[:, 2:3]
+    norm = np.clip(uv / np.array([IMG_W, IMG_H]), 0.0, 1.0)
+    return [[round(float(a), 4), round(float(c), 4)] for a, c in norm]
 
 
 def litter_blobs(rng: np.random.Generator, geo: dict, target_area: float, avoid_center: np.ndarray, avoid_r: float = 0.55) -> list[np.ndarray]:
@@ -297,11 +312,11 @@ def simulate_camera(rng: np.random.Generator, site: dict, role: dict, start: dat
         if t_local.hour == 8 and xk > kind["thr"] and float(rng.random()) < kind["service"]:    # đội vệ sinh sáng ~08:30
             xk = float(rng.uniform(0.0, 6.0))
         x[k] = min(max(xk, 0.0), 100.0)
-    base_waste = float(rng.gamma(1.6, 1.1)) * (1.6 if role["kind"] == "neglected" else 1.0)
+    base_waste = float(rng.gamma(1.1, 0.40)) * (1.6 if role["kind"] == "neglected" else 1.0)
     w_noise = np.zeros(n_steps)
     for k in range(1, n_steps):
         w_noise[k] = 0.8 * w_noise[k - 1] + float(rng.normal(0.0, 0.6))
-    w = np.clip(0.17 * x + base_waste + w_noise, 0.0, 60.0)
+    w = np.clip(0.10 * x + base_waste + w_noise, 0.0, 60.0)
 
     minutes = np.arange(n_minutes + 1)
     hours = minutes / 60.0
@@ -329,10 +344,16 @@ def simulate_camera(rng: np.random.Generator, site: dict, role: dict, start: dat
     for m in np.nonzero(ok)[0].tolist():
         tracker.add(m, float(y[m]))
         last.append((m, float(y[m]), float(wr[m])))
-    return tracker, last[-100:]
+    run: list = []
+    for item in reversed(last):                       # đoạn đo liên tục cuối cùng (khe > 15 phút làm trạng thái cống bắt đầu lại)
+        if run and run[-1][0] - item[0] > POLICY["reading_max_age_min"]:
+            break
+        run.append(item)
+    run.reverse()
+    return tracker, last[-100:], run
 
 
-def build(seed: int) -> dict:
+def _build(seed: int):
     sites = json.loads(SITES.read_text(encoding="utf-8"))["cameras"]
     start = AS_OF - timedelta(days=SIM_DAYS)
     n_minutes = SIM_DAYS * 24 * 60
@@ -346,6 +367,7 @@ def build(seed: int) -> dict:
     new_ones = set(order[N_OFFLINE_LONG + N_OFFLINE_RECENT:N_OFFLINE_LONG + N_OFFLINE_RECENT + N_NEW])
 
     cameras = []
+    extras: dict = {}
     for idx, site in enumerate(sites):
         rng = np.random.default_rng(np.random.SeedSequence([seed, 2, zlib.crc32(site["id"].encode())]))
         kind = str(rng.choice(list(KINDS), p=ZONE_KIND_P.get(site["zone"], (0.6, 0.27, 0.13))))
@@ -356,7 +378,7 @@ def build(seed: int) -> dict:
             role["last_min"] = n_minutes - int(rng.uniform(20, 50))
         elif idx in new_ones:
             role["first_min"] = n_minutes - int(rng.integers(0, 2))     # mới lắp: 1-2 lần đo tại thời điểm chụp
-        tracker, last = simulate_camera(rng, site, role, start, n_minutes)
+        tracker, last, run = simulate_camera(rng, site, role, start, n_minutes)
         geo = camera_geometry(site, rng)
 
         cam = {
@@ -411,12 +433,20 @@ def build(seed: int) -> dict:
         }
         cam["regions"] = [{"kind": k, "area_m2": round(shoelace(b), 3), "ring": to_latlon_ring(site, b)} for k, b in regions]
         cameras.append(cam)
+        iso = lambda m: (start + timedelta(minutes=m)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+        extras[site["id"]] = {
+            "run": [[iso(m), v, w] for m, v, w in run],
+            "latest_waste_pct": waste_pct,
+            "roi_norm": roi_to_image(geo),
+            "calibrated_at": (AS_OF - timedelta(hours=3 if idx in new_ones else 24 * 9)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "heading": round(geo["heading"], 1), "height_m": round(geo["height"], 1),
+        }
 
     zones = []
     for zid in sorted({c["zone"] for c in cameras}):
         pts = [c["pos"] for c in cameras if c["zone"] == zid]
         zones.append({"id": zid, "center": [round(sum(p[0] for p in pts) / len(pts), 5), round(sum(p[1] for p in pts) / len(pts), 5)], "cameras": len(pts)})
-    return {
+    doc = {
         "version": 1,
         "simulated": True,
         "note": "SIMULATED data for illustration: camera positions, readings and litter outlines are generated, not measured.",
@@ -427,6 +457,11 @@ def build(seed: int) -> dict:
         "zones": zones,
         "cameras": cameras,
     }
+    return doc, extras
+
+
+def build(seed: int) -> dict:
+    return _build(seed)[0]
 
 
 def main() -> int:

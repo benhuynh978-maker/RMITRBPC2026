@@ -3,6 +3,7 @@ import { normalizeAlerts } from '../src/services/normalizeAlerts';
 import { normalizeCameras } from '../src/services/mapService';
 import { buildMonitoringAlerts, handoffText } from '../src/services/monitoringService';
 import { demoRoads, demoCameras } from '../src/mocks/monitoring';
+import { SEVERITY } from '../src/config/severity';
 import type { RoadAlert } from '../src/models/roadAlert';
 const road: RoadAlert = { road_id:'R1', severity:'normal', geometry:{type:'LineString',coordinates:[[106.7,10.77],[106.71,10.78]]} };
 
@@ -21,8 +22,11 @@ describe('CleanSight monitoring contract and prioritization', () => {
   it('sorts urgent incidents first and preserves monitoring through both adapters', () => {
     const alerts=buildMonitoringAlerts(normalizeAlerts({roads:[...demoRoads].reverse()}));
     expect(alerts[0].severity).toBe('critical');
-    expect(alerts).toHaveLength(2);
-    expect(normalizeCameras({cameras:demoCameras})[0].road_id).toBe('DEMO-R1');
+    expect(alerts.length).toBeGreaterThan(1);
+    expect(alerts.every((a,i)=>i===0||SEVERITY[alerts[i-1].severity].rank>=SEVERITY[a.severity].rank)).toBe(true);
+    const cameras=normalizeCameras({cameras:demoCameras});
+    expect(cameras[0].road_id).toBe(demoCameras[0].road_id);
+    expect(cameras[0].monitoring).toEqual(demoCameras[0].monitoring);
   });
   it('does not notify again on polling timestamps; new incident or escalation has a new key', () => {
     const original={...road,severity:'high' as const,alert_id:'A1'};
@@ -41,9 +45,10 @@ describe('CleanSight monitoring contract and prioritization', () => {
     expect(normalizeCameras({cameras:[{...demoCameras[0],images:{original_url:'/images/original.jpg',analyzed_url:'https://example.com/ai.jpg'}}]})[0].images?.original_url).toBe('/images/original.jpg');
   });
   it('exports a traceable handoff without pretending delivery, including demo disclaimer', () => {
-    const text=handoffText(buildMonitoringAlerts(demoRoads)[0],demoCameras,'Sanitation team A','Check the drain',true);
+    const first=buildMonitoringAlerts(demoRoads)[0];
+    const text=handoffText(first,demoCameras,'Sanitation team A','Check the drain',true);
     expect(text).toContain('NOT FOR REAL DISPATCH');
-    expect(text).toContain('DEMO-C1');
+    expect(text).toContain(demoCameras.find(c=>c.road_id===first.road.road_id)!.camera_id);
     expect(text).toContain('LineString');
     expect(text).toContain('Sanitation team A');
     expect(text).not.toMatch(/SSC|Sustainable|Challenge|RMIT|RBPC/i);

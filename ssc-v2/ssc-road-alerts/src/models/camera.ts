@@ -1,6 +1,7 @@
 import type { Coordinate } from './roadAlert';
 import type { CameraImages, Monitoring } from './monitoring';
 import type { DrainRoi, DrainState } from './drain';
+import type { TrashRegion } from './trash';
 export interface Camera {
   camera_id: string;
   name?: string;
@@ -14,4 +15,6 @@ export interface Camera {
   drain_roi?: DrainRoi;
   /** Vắng mặt = chưa nhận được từ API; giao diện coi như unknown/no_data. */
   drain_state?: DrainState;
+  /** TÙY CHỌN: vùng rác AI đã khoanh (m²) vẽ trên bản đồ. Hiện chỉ dữ liệu demo có; backend/AI worker chưa gửi. */
+  trash_regions?: TrashRegion[];
 }

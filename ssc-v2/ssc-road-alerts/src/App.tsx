@@ -8,7 +8,7 @@ import { ObservationDetail } from './components/monitoring/ObservationDetail';
 import { AlertQueue } from './components/monitoring/AlertQueue';
 import { CoordinateTool } from './components/monitoring/CoordinateTool';
 import { buildMonitoringAlerts } from './services/monitoringService';
-import { demoCameras, demoRoads } from './mocks/monitoring';
+import { demoAsOf, demoCameras, demoRoads } from './mocks/monitoring';
 import { SEVERITY, SEVERITY_ORDER } from './config/severity';
 import { MONITORING_CONFIG } from './config/monitoring';
 import { useWeather } from './hooks/useWeather';
@@ -17,7 +17,8 @@ import { WeatherPanel } from './components/monitoring/WeatherPanel';
 import { DrainSummaryRow } from './components/monitoring/DrainSummaryRow';
 
 export default function App() {
-  const [mode,setMode]=useState<'api'|'demo'>('api');
+  // The default source is the server; a build made for the public demo (VITE_DEFAULT_SOURCE=demo) opens on the simulation instead.
+  const [mode,setMode]=useState<'api'|'demo'>(import.meta.env.VITE_DEFAULT_SOURCE==='demo'?'demo':'api');
   const data=useMapData(mode==='api');
   const sourceRoads=mode==='demo'?demoRoads:data.roads;
   const cameras=mode==='demo'?demoCameras:data.cameras;
@@ -48,7 +49,7 @@ export default function App() {
     <header className="header"><a className="brand" href="./"><span className="brand-icon"><Route size={25}/></span><strong>CleanSight<span>Road Monitor</span></strong></a><div className="header-right"><span className="camera-heading"><CloudRain size={20}/>Flood prevention starts at the drain</span></div></header>
     <main>
       <div className="page-heading"><div><div className="eyebrow">URBAN ENVIRONMENT MONITORING</div><h1>Collect on time. Reduce flood risk.</h1><p>Track litter, drain condition and the roads that need attention before rain.</p></div><div className="heading-actions"><label className="source-picker">Data source<select value={mode} onChange={e=>changeMode(e.target.value as 'api'|'demo')}><option value="api">Server</option><option value="demo">Demo simulation</option></select></label><button className="refresh" disabled={data.loading||mode==='demo'} onClick={()=>void data.refresh()}><RefreshCw size={17} className={data.loading?'spinning':''}/>{data.loading?'Loading…':'Refresh data'}</button></div></div>
-      {mode==='demo'&&<div className="notice">SIMULATION · Locations and figures are illustrative, sample observation of 09/09/2026. Not field data; do not use for real dispatch.</div>}
+      {mode==='demo'&&<div className="notice">SIMULATION · A simulated city of {demoCameras.length} cameras: locations, figures and litter outlines are illustrative (snapshot {new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'medium',timeStyle:'short'}).format(new Date(demoAsOf))}, UTC+7). Not field data; do not use for real dispatch.</div>}
       {mode==='api'&&<div className="data-status" role="status">{data.loading?'Receiving data…':data.updated?`Last received: ${data.updated} · Auto-refreshes every 30 seconds while the tab is open.`:'No data received yet.'}{data.errors.cameras&&<span>Cameras: {data.errors.cameras}. {cameras.length?'Keeping previous data.':'No data yet.'}</span>}{data.errors.roads&&<span>Roads: {data.errors.roads}. {roads.length?'Keeping previous data.':'No data yet.'}</span>}</div>}
       <section className="summary overview" aria-label="Overview"><div><Route size={21}/><span>Roads monitored</span><strong>{roads.length}</strong></div><div><TriangleAlert size={21}/><span>Roads needing attention</span><strong className="urgent-number">{alerts.length}</strong></div><div><Camera size={21}/><span>Cameras online</span><strong>{cameras.filter(c=>c.status==='online').length}<small>/ {cameras.length} cameras</small></strong></div><div><CloudRain size={21}/><span>Roads with rain signal</span><strong>{roads.filter(r=>r.monitoring?.rain_expected===true).length}</strong></div></section>
       {handling.announcement&&<div className="notice notification" role="status" aria-live="polite"><Bell size={19}/><span>{handling.announcement}</span><button className="secondary" onClick={handling.dismiss}>Dismiss</button></div>}

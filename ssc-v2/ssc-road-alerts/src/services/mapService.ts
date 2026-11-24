@@ -2,6 +2,7 @@ import type { Camera } from '../models/camera';
 import { normalizeAlerts } from './normalizeAlerts';
 import { normalizeDrainRoi, normalizeDrainState } from './normalizeDrain';
 import { normalizeImages, normalizeMonitoring } from './normalizeMonitoring';
+import { normalizeTrashRegions } from './normalizeTrash';
 export function normalizeCameras(payload: unknown): Camera[] {
   const rows = (payload as {cameras?:unknown})?.cameras;
   if (!Array.isArray(rows)) throw new Error('The camera API must return {cameras: [...]}');
@@ -16,7 +17,7 @@ export function normalizeCameras(payload: unknown): Camera[] {
     if (item.road_id !== undefined && (typeof item.road_id !== 'string' || !item.road_id.trim())) throw new Error('Camera road_id must be a non-empty string');
     if(item.analysis_source!==undefined&&!['simulation','ai'].includes(item.analysis_source))throw new Error('Invalid analysis_source');
     if(item.analysis_status!==undefined&&!['fresh','stale'].includes(item.analysis_status))throw new Error('Invalid analysis_status');
-    return { camera_id:item.camera_id, name:item.name, status:item.status, geometry:item.geometry, road_id:item.road_id, monitoring:normalizeMonitoring(item.monitoring), images:normalizeImages(item.images),analysis_source:item.analysis_source,analysis_status:item.analysis_status,drain_roi:normalizeDrainRoi(item.drain_roi),drain_state:normalizeDrainState(item.drain_state) } as Camera;
+    return { camera_id:item.camera_id, name:item.name, status:item.status, geometry:item.geometry, road_id:item.road_id, monitoring:normalizeMonitoring(item.monitoring), images:normalizeImages(item.images),analysis_source:item.analysis_source,analysis_status:item.analysis_status,drain_roi:normalizeDrainRoi(item.drain_roi),drain_state:normalizeDrainState(item.drain_state),trash_regions:normalizeTrashRegions(item.trash_regions,item.camera_id) } as Camera;
   });
 }
 async function getJson(url: string, signal: AbortSignal) {

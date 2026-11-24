@@ -143,3 +143,13 @@ Bổ sung, không đổi các trường/severity cũ:
 ### 6. Đổi tên trên giao diện
 
 Nhãn "Tỉ lệ ngập" (trường `drain_blockage_pct`) đổi thành **"Mức che miệng cống"** ở WebUI (`Metrics.tsx`, lý do cảnh báo trong `monitoringService.ts`, ghi chú ngưỡng ở `App.tsx`), site demo `test-WebUI-modelAI/web/index.html` và README. Tên biến/trường (`flood*`, `drain_blockage_pct`) giữ nguyên. "Nguy cơ ngập" (flood risk) là khái niệm khác, không đổi.
+
+### 7. Demo thành phố mô phỏng và lớp vùng rác (chỉ giao diện; backend và AI worker không đổi)
+
+- **Dữ liệu cho chế độ "Demo simulation"** (`src/mocks/city.json`) là một thành phố **mô phỏng**: 100 camera gom thành ~38 tuyến, tên giả định ("Road R-01 (sample)", "Drain inlet 001"). Không phải hiện trường, không phải khách hàng thật; banner SIMULATION của chế độ demo và dòng "[Simulated data via the test API]" do chính backend ghi trên mô tả tuyến đều nói rõ điều đó. Thay cho 3 tuyến/3 camera mẫu cũ (còn trong lịch sử Git).
+- Dữ liệu có **đúng dạng API** (`/api/road-alerts`, `/api/cameras`) vì được sinh bằng chính mã backend (`computeDrainState`, `publicCamera`, `aggregateRoad`, `validateDataset`) và nạp qua các hàm chuẩn hoá của dashboard như dữ liệu từ máy chủ. Sinh lại: `research/cleansight_customer_demo/make_dashboard_data.py` (xem README ở đó: cái gì thật, cái gì giả lập, giới hạn).
+- **Trường tùy chọn mới `trash_regions` trên camera** (mảng `{kind: drain|street, area_m2, ring: [[lng,lat],...]}`, tối đa 100 vùng): vùng rác AI đã khoanh, đã chiếu xuống mặt đất. Dashboard vẽ **tất cả** vùng trên bản đồ (`TrashRegionLayer`, không có nút bật/tắt) và hiện số vùng/tổng m² trong chi tiết camera (`TrashRegionSummary`). Chuẩn hoá ở `services/normalizeTrash.ts` (vắng = không có; sai dạng = lỗi). **Backend chưa nhận/lưu/trả trường này và AI worker chưa gửi**: ở chế độ Server camera thật không có vùng nào. Nối end-to-end (AI worker → backend → dashboard) là việc riêng chưa làm.
+- Bản đồ cho phép phóng đến mức 21 (trước là 19; nền bản đồ được phóng to từ ô gốc) và chọn camera có vùng rác thì zoom tối đa 21, vì ở mức 19 vùng rác chỉ vài điểm ảnh.
+- `VITE_DEFAULT_SOURCE=demo` (lúc build) làm dashboard mở sẵn ở "Demo simulation"; không đặt thì vẫn mở "Server" như cũ.
+- Phục vụ cho giám khảo từ laptop: `research/cleansight_customer_demo/open_dashboard_demo.ps1` (build, máy chủ tĩnh 127.0.0.1:5175, Funnel cổng 10000) và `close_dashboard_demo.ps1`. Chưa chạy thử trên Windows.
+- Giới hạn của giao diện thật khi có 100 camera: biểu tượng camera chồng lên nhau ở mức thu nhỏ (dashboard chưa có gom cụm), tuyến là đường nối các camera gần nhau nên không bám theo phố.

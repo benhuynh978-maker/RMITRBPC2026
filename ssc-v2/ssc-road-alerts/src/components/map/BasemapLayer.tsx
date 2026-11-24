@@ -18,7 +18,7 @@ export function BasemapLayer({ provider, onHealth }: {provider: BasemapProvider;
     armTimeout();
     return () => { active.current = false; clearTimeout(timer.current); };
   }, []);
-  return <TileLayer url={provider.url} attribution={provider.attribution} maxNativeZoom={provider.maxNativeZoom} maxZoom={19} eventHandlers={{
+  return <TileLayer url={provider.url} attribution={provider.attribution} maxNativeZoom={provider.maxNativeZoom} maxZoom={21} eventHandlers={{
     loading: () => { counts.current = {loaded: 0, errors: 0}; report('loading'); armTimeout(); },
     tileload: () => { counts.current.loaded++; },
     tileerror: () => { counts.current.errors++; },

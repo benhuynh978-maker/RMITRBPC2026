@@ -9,6 +9,7 @@ import { CoordinatePicker, type DrawMode, type DraftPoint } from './CoordinatePi
 import { basemaps } from '../../config/basemaps';
 import { BasemapLayer, type TileHealth } from './BasemapLayer';
 import { RainLayer } from './RainLayer';
+import { TrashRegionLayer } from './TrashRegionLayer';
 import type { CameraForecast } from '../../models/weather';
 function Viewport({roads,cameras,reset}:{roads:RoadAlert[];cameras:Camera[];reset:number}) {
  const map=useMap();
@@ -18,9 +19,10 @@ function Viewport({roads,cameras,reset}:{roads:RoadAlert[];cameras:Camera[];rese
  return null;
 }
 function SelectedViewport({road,camera}:{road?:RoadAlert;camera?:Camera}) {
+ const maxZoom=camera?.trash_regions?.length?21:18; // litter outlines are only a few pixels wide below zoom 20
  const map=useMap();
  const coordinates=JSON.stringify(camera ? [[camera.geometry.coordinates[1],camera.geometry.coordinates[0]]] : road ? toLeafletPositions(road.geometry.coordinates) : []);
- useEffect(()=>{const points=JSON.parse(coordinates) as [number,number][]; if(points.length)map.fitBounds(points,{padding:[70,70],maxZoom:18,animate:false});},[coordinates,map]);
+ useEffect(()=>{const points=JSON.parse(coordinates) as [number,number][]; if(points.length)map.fitBounds(points,{padding:[70,70],maxZoom,animate:false});},[coordinates,map,maxZoom]);
  return null;
 }
 export function RoadMap({roads,cameras,drawMode,draft,onPoint,selectedRoad,selectedCamera,onRoadSelect,onCameraSelect,rainForecasts=[]}:{rainForecasts?:CameraForecast[];roads:RoadAlert[];cameras:Camera[];drawMode:DrawMode;draft:DraftPoint[];onPoint:(p:DraftPoint)=>void;selectedRoad?:RoadAlert;selectedCamera?:Camera;onRoadSelect?:(id:string)=>void;onCameraSelect?:(id:string)=>void}) {
@@ -40,13 +42,14 @@ export function RoadMap({roads,cameras,drawMode,draft,onPoint,selectedRoad,selec
    } else setHealth(next);
  }
  return <section className="map-shell" aria-label="Road alert map">
-   <MapContainer center={[10.773,106.700]} zoom={15} maxZoom={19} zoomControl={false} className="road-map">
+   <MapContainer center={[10.773,106.700]} zoom={15} maxZoom={21} zoomControl={false} className="road-map">
      <BasemapLayer key={`${source}-${attempt}`} provider={provider} onHealth={onHealth}/>
      <ZoomControl position="bottomright"/>
      <RainLayer forecasts={rainForecasts}/>
      <Viewport roads={roads} cameras={cameras} reset={reset}/>
      <SelectedViewport road={selectedRoad} camera={selectedCamera}/>
      <RoadAlertLayer roads={roads} selectedId={selectedRoad?.road_id} onSelect={drawMode==='none'?onRoadSelect:undefined}/>
+     <TrashRegionLayer cameras={cameras}/>
      <CameraLayer cameras={cameras} onSelect={drawMode==='none'?onCameraSelect:undefined}/><RoadPointLayer roads={roads} onSelect={drawMode==='none'?onRoadSelect:undefined}/><CoordinatePicker mode={drawMode} points={draft} onPoint={onPoint}/>
    </MapContainer>
    <div className="map-label"><span className="live-dot"/> ROAD MAP</div>

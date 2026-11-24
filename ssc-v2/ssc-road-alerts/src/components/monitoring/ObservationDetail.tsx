@@ -3,6 +3,7 @@ import type { Camera } from '../../models/camera';
 import type { RoadAlert } from '../../models/roadAlert';
 import { Metrics, formatTime } from './Metrics';
 import { DrainStatusCard } from './DrainStatusCard';
+import { TrashRegionSummary } from './TrashRegionSummary';
 import { DrainSummaryRow } from './DrainSummaryRow';
 import { DrainRoiEditor } from './DrainRoiEditor';
 import { DrainPhotoTest } from './DrainPhotoTest';
@@ -28,6 +29,7 @@ export function ObservationDetail({ road, camera, cameras, onCamera, onClose, on
     <Metrics data={camera?.monitoring ?? (!camera ? road?.monitoring : undefined)}/>
     {!camera && <DrainSummaryRow summary={road?.drain_summary}/>}
     {camera && <DrainStatusCard camera={camera}/>}
+    {camera && <TrashRegionSummary camera={camera}/>}
     {camera && (demo
       ? <p className="notice">Simulation mode: cameras are illustrative data, so a drain zone cannot be drawn or saved. Choose the "Server" data source to calibrate the drain zone.</p>
       : <><DrainRoiEditor key={camera.camera_id} camera={camera} onSaved={() => onRefresh?.()}/><DrainPhotoTest key={camera.camera_id} camera={camera} onDone={() => onRefresh?.()}/></>)}

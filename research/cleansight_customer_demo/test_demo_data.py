@@ -186,6 +186,34 @@ def main() -> int:
     sev = {x["latest"]["severity"] for x in cams if x.get("latest")}
     check("mức cảnh báo (severity) theo luật thật có từ 3 mức trở lên", len(sev) >= 3, str(sorted(sev)))
 
+    # ---------------- dữ liệu cho dashboard thật (mã backend thật chạy trong Node) ----------------
+    if have_node:
+        import make_dashboard_data as md
+        payload = md.build_input(2026)
+        api = md.run_builder(payload)
+        by_src = {c["id"]: c for c in a["cameras"]}
+        diff = []
+        for src, out in zip(payload["cameras"], api["cameras"]):
+            ref = by_src[src["source_id"]]
+            ds = out["drain_state"]
+            same_state = ds["state"] == ref["state"] and ds["reason"] == ref["reason"] and (ref["status"] == "offline" or ds["window_count"] == ref["window"])  # camera mất kết nối: backend thật giữ số lần đo cũ, chỉ đổi state/reason
+            same_pct = (ds.get("smoothed_blockage_pct") is None and ref["blockage_pct"] is None) or abs(ds["smoothed_blockage_pct"] - ref["blockage_pct"]) < 1e-9
+            same_status = out["status"] == ref["status"]
+            if not (same_state and same_pct and same_status):
+                diff.append((src["camera_id"], ds["state"], ref["state"]))
+        check("dashboard: trạng thái cống do MÃ BACKEND THẬT (Node) tính == bộ theo dõi Python, cả 100 camera (trạng thái, lý do, số lần đo của camera đang online, % làm mượt, online/offline)", not diff, str(diff[:3]))
+        roads = {r["road_id"]: r for r in api["roads"]}
+        check("dashboard: mọi camera thuộc một tuyến có thật, mỗi tuyến có ít nhất một camera", all(c["road_id"] in roads for c in api["cameras"])
+              and all(any(c["road_id"] == rid for c in api["cameras"]) for rid in roads), f"{len(roads)} tuyến, {len(api['cameras'])} camera")
+        ok_sum = all(sum(r["drain_summary"][k] for k in ("clear", "watch", "clean", "unknown")) == r["camera_count"] for r in roads.values())
+        check("dashboard: tổng hợp theo tuyến của backend thật nhất quán (drain_summary cộng lại = số camera của tuyến)", ok_sum)
+        check("dashboard: tên giả định, không tên phố thật hay tên cuộc thi", all(r["road_name"].startswith("Road R-") and r["road_name"].endswith("(sample)") for r in roads.values())
+              and all(c["name"].startswith("Drain inlet ") for c in api["cameras"]) and not __import__("re").search(r"SSC|Sustainable|Challenge|RMIT|RBPC", json.dumps(api), __import__("re").I))
+        check("dashboard: mô tả tuyến do backend ghi rõ dữ liệu mô phỏng", all(r["description"].startswith("[Simulated data via the test API]") for r in roads.values() if r["data_quality"] != "unknown"))
+        check("dashboard: vùng cống quy về ảnh nằm trong khung [0,1] và có 4 đỉnh", all(len(c["drain_roi"]["polygon"]) == 4 and all(0 <= v <= 1 for p in c["drain_roi"]["polygon"] for v in p) for c in api["cameras"]))
+        again = md.run_builder(md.build_input(2026))
+        check("dashboard: sinh lại cho đúng từng byte (cùng hạt giống)", json.dumps(api, sort_keys=True) == json.dumps(again, sort_keys=True))
+
     print(f"\nTổng: {PASS} đạt, {FAIL} hỏng")
     return 1 if FAIL else 0
 
