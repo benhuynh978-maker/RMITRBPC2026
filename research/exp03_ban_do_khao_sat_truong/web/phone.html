@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chụp điểm khảo sát</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --fg:#f1f5f9; --muted:#94a3b8; --ok:#22c55e; --bad:#f87171; --acc:#38bdf8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:16px; max-width:560px; margin-inline:auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .muted { color:var(--muted); font-size:14px; }
+  .stats { display:flex; gap:8px; margin:12px 0; }
+  .stat { flex:1; background:var(--card); border-radius:10px; padding:8px 10px; text-align:center; }
+  .stat b { display:block; font-size:22px; }
+  .btn { display:block; width:100%; border:0; border-radius:14px; padding:18px; font-size:19px; font-weight:700; background:var(--acc); color:#04263a; cursor:pointer; text-align:center; }
+  .btn.sec { background:var(--card); color:var(--fg); font-size:15px; font-weight:600; padding:12px; margin-top:10px; }
+  .btn[disabled] { opacity:.5; }
+  input[type=file] { display:none; }
+  .card { background:var(--card); border-radius:12px; padding:12px; margin-top:14px; }
+  .card.ok { border-left:5px solid var(--ok); } .card.bad { border-left:5px solid var(--bad); }
+  .card img { width:100%; border-radius:8px; margin-top:8px; display:block; }
+  .warn { color:#fbbf24; font-size:14px; margin-top:6px; }
+  .bar { height:8px; background:#334155; border-radius:6px; overflow:hidden; margin-top:10px; } .bar > i { display:block; height:100%; width:0; background:var(--acc); transition:width .2s; }
+  ul { padding-left:18px; margin:6px 0 0; } li { margin:2px 0; }
+  .err { color:var(--bad); }
+</style>
+</head>
+<body>
+<h1>Chụp điểm khảo sát</h1>
+<div class="muted">Đặt bảng ArUco xuống đất cạnh rác, cùng một hướng ở mọi điểm. Chụp <b>1 ảnh</b> thấy cả bảng và rác (đứng gần, bảng đủ lớn).</div>
+
+<div class="stats">
+  <div class="stat"><b id="s-ok">–</b><span class="muted">điểm dùng được</span></div>
+  <div class="stat"><b id="s-bad">–</b><span class="muted">ảnh lỗi</span></div>
+  <div class="stat"><b id="s-area">–</b><span class="muted">m² (tạm tính)</span></div>
+</div>
+
+<button class="btn" id="b-cam" type="button">📷 Chụp điểm mới</button>
+<button class="btn sec" id="b-pick" type="button">Chọn ảnh có sẵn từ thư viện (nhiều ảnh)</button>
+<input id="f-cam" type="file" accept="image/*" capture="environment">
+<input id="f-pick" type="file" accept="image/*" multiple>
+
+<div class="bar" id="bar" hidden><i id="bar-i"></i></div>
+<div id="msg" class="muted" style="margin-top:8px"></div>
+<div id="result"></div>
+
+<h2 style="font-size:16px;margin:22px 0 6px">Các điểm gần đây</h2>
+<div id="recent" class="muted">Chưa có.</div>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var code = (location.hash || '').replace(/^#/, '').trim();
+  try { if (code) sessionStorage.setItem('svy_code', code); else code = sessionStorage.getItem('svy_code') || ''; } catch (e) {}
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function fmt(v) { return Number(v).toLocaleString('vi-VN', { maximumFractionDigits: 2 }); }
+
+  function api(path, opts) {
+    opts = opts || {}; opts.headers = Object.assign({ 'X-Access-Code': code }, opts.headers || {});
+    return fetch(path, opts).then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Máy chủ trả dữ liệu lạ.' }; }); });
+  }
+
+  function refresh() {
+    api('/api/spots').then(function (j) {
+      if (!j.ok) { $('msg').innerHTML = '<span class="err">' + esc(j.error) + '</span>'; return; }
+      var s = j.summary;
+      $('s-ok').textContent = s.n_photos - s.n_failed; $('s-bad').textContent = s.n_failed;
+      var ok = j.spots.filter(function (x) { return x.status === 'ok'; });
+      $('s-area').textContent = fmt(ok.reduce(function (a, x) { return a + (x.area_m2 || 0); }, 0));
+      var last = j.spots.slice(-5).reverse();
+      $('recent').innerHTML = last.length ? '<ul>' + last.map(function (x) {
+        return '<li>' + esc(x.name) + ' · ' + (x.status === 'ok' ? fmt(x.area_m2) + ' m², ' + (x.ai_regions.length) + ' vùng AI' : '<span class="err">lỗi: ' + esc(x.error) + '</span>') + '</li>';
+      }).join('') + '</ul>' : 'Chưa có.';
+    }).catch(function () { $('msg').innerHTML = '<span class="err">Không kết nối được máy chủ (laptop tắt hoặc mất Tailscale/4G).</span>'; });
+  }
+
+  function upload(file) {
+    return new Promise(function (resolve) {
+      var fd = new FormData(); fd.append('photo', file, file.name || 'photo.jpg');
+      var x = new XMLHttpRequest(); x.open('POST', '/api/photos'); x.setRequestHeader('X-Access-Code', code);
+      x.upload.onprogress = function (e) { if (e.lengthComputable) { $('bar-i').style.width = Math.round(e.loaded / e.total * 100) + '%'; } };
+      x.onload = function () { var j; try { j = JSON.parse(x.responseText); } catch (e) { j = { ok: false, error: 'Máy chủ trả dữ liệu lạ.' }; } resolve(j); };
+      x.onerror = function () { resolve({ ok: false, error: 'Mất kết nối khi gửi ảnh. Kiểm tra Tailscale/4G rồi gửi lại.' }); };
+      x.timeout = 180000; x.ontimeout = x.onerror;
+      x.send(fd);
+    });
+  }
+
+  function show(j, name) {
+    var el = document.createElement('div');
+    if (!j.ok) {
+      el.className = 'card bad';
+      el.innerHTML = '<b class="err">Chưa nhận được' + (name ? ' (' + esc(name) + ')' : '') + '</b><div>' + esc(j.error) + '</div>';
+    } else if (j.spot.status !== 'ok') {
+      el.className = 'card bad';
+      el.innerHTML = '<b class="err">' + esc(j.spot.name) + ': ảnh chưa dùng được</b><div>' + esc(j.spot.error) + '</div><div class="muted">Ảnh vẫn được lưu. Hãy chụp lại điểm này.</div>';
+    } else {
+      var s = j.spot; el.className = 'card ok';
+      el.innerHTML = '<b>' + esc(s.name) + ': tìm thấy bảng</b><div>' + s.ai_regions.length + ' vùng rác AI · <b>' + fmt(s.area_m2) + ' m²</b> · bảng ' + fmt(s.side_px_min) + ' px</div>' +
+        (s.warnings || []).map(function (w) { return '<div class="warn">⚠ ' + esc(w) + '</div>'; }).join('') +
+        '<img alt="Ảnh có vùng AI" src="/api/spots/' + s.id + '/image?kind=overlay&code=' + encodeURIComponent(code) + '">' +
+        '<div class="muted">Đỏ = vùng AI khoanh. AI còn bỏ sót rác; bạn chỉnh lại trên laptop.</div>';
+    }
+    $('result').prepend(el);
+  }
+
+  async function handle(files) {
+    files = Array.prototype.slice.call(files || []);
+    if (!files.length) return;
+    ['b-cam', 'b-pick'].forEach(function (id) { $(id).disabled = true; });
+    $('bar').hidden = false;
+    for (var i = 0; i < files.length; i++) {
+      $('bar-i').style.width = '0%';
+      $('msg').textContent = 'Đang gửi và xử lý ảnh ' + (i + 1) + '/' + files.length + '… (AI chạy vài giây)';
+      var j = await upload(files[i]);
+      show(j, files[i].name);
+    }
+    $('bar').hidden = true; $('msg').textContent = '';
+    ['b-cam', 'b-pick'].forEach(function (id) { $(id).disabled = false; });
+    $('f-cam').value = ''; $('f-pick').value = '';
+    refresh();
+  }
+
+  $('b-cam').onclick = function () { $('f-cam').click(); };
+  $('b-pick').onclick = function () { $('f-pick').click(); };
+  $('f-cam').onchange = function (e) { handle(e.target.files); };
+  $('f-pick').onchange = function (e) { handle(e.target.files); };
+  if (!code) $('msg').innerHTML = '<span class="err">Thiếu mã truy cập. Mở đúng đường dẫn có đuôi #mã mà laptop in ra.</span>';
+  refresh();
+})();
+</script>
+</body>
+</html>

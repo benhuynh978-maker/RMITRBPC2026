@@ -1,0 +1,41 @@
+:root { --bg:#f8fafc; --fg:#0f172a; --muted:#64748b; --line:#e2e8f0; --acc:#0369a1; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); }
+#app { display: grid; grid-template-columns: 380px 1fr; height: 100%; }
+#panel { overflow: auto; background: #fff; border-right: 1px solid var(--line); padding: 14px 16px; }
+#map { height: 100%; min-height: 0; }
+h1 { font-size: 20px; margin: 0 0 8px; line-height: 1.25; }
+#totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.kpi { background: #f1f5f9; border-radius: 10px; padding: 8px 10px; }
+.kpi b { display: block; font-size: 24px; line-height: 1.1; }
+.kpi span { color: var(--muted); font-size: 13px; }
+#legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 4px 0; }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 2px solid; }
+.sw.ai { background: rgba(239,68,68,.5); border-color: #b91c1c; }
+.sw.manual { background: rgba(245,158,11,.5); border-color: #b45309; border-style: dashed; }
+.opt { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 6px 0; cursor: pointer; }
+.spot { display: flex; gap: 10px; padding: 8px; margin: 6px 0; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #fff; }
+.spot:hover, .spot.sel { border-color: var(--acc); background: #f0f9ff; }
+.spot img { width: 84px; height: 62px; object-fit: cover; border-radius: 8px; background: #cbd5e1; flex: none; }
+.spot .n { font-weight: 700; } .spot .m { color: var(--muted); font-size: 13px; }
+#notes { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+#notes p { margin: 4px 0; }
+.pin { width: 30px; height: 30px; border-radius: 50%; background: #0369a1; color: #fff; font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.55); }
+.pin.sel { background: #d97706; }
+.leaflet-tooltip.pin-label { font-weight: 700; }
+/* Từ mức 20 trở lên ghim thu thành chấm nhỏ để không che vùng rác nằm sát bảng */
+.map-hi .leaflet-marker-icon { pointer-events: none !important; }
+.map-hi .pin { width: 12px; height: 12px; margin: 8px; font-size: 0; border-width: 2px; pointer-events: auto; }
+
+.popup img { width: 240px; max-width: 100%; border-radius: 8px; display: block; margin: 6px 0; cursor: zoom-in; background: #cbd5e1; }
+.popup b { font-size: 15px; } .popup div { color: var(--muted); font-size: 13px; }
+#lb { position: fixed; inset: 0; background: rgba(15,23,42,.9); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; color: #fff; }
+#lb[hidden] { display: none; }
+#lb img { max-width: 96vw; max-height: 80vh; border-radius: 8px; }
+#lb-cap { margin: 6px 0; text-align: center; }
+#lb-x { position: absolute; top: 10px; right: 14px; font-size: 22px; background: none; border: 0; color: #fff; cursor: pointer; }
+@media (max-width: 860px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 55% 45%; }
+  #map { order: -1; } #panel { border-right: 0; border-top: 1px solid var(--line); }
+}

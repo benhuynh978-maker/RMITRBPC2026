@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khảo sát rác – rà soát</title>
+<link rel="stylesheet" href="/web/vendor/leaflet/leaflet.css">
+<style>
+  :root { --bg:#f1f5f9; --card:#fff; --fg:#0f172a; --muted:#64748b; --line:#e2e8f0; --acc:#0369a1; --bad:#b91c1c; --warn:#b45309; --ok:#15803d; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; margin:0; }
+  body { font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--fg); display:flex; flex-direction:column; }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:8px 12px; display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+  header input[type=text] { font-size:15px; font-weight:700; border:1px solid transparent; border-radius:6px; padding:4px 6px; min-width:260px; }
+  header input[type=text]:hover, header input[type=text]:focus { border-color:var(--line); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { background:#e0f2fe; color:#075985; border-radius:999px; padding:2px 10px; font-weight:600; white-space:nowrap; }
+  .chip.warn { background:#fef3c7; color:#92400e; } .chip.bad { background:#fee2e2; color:#991b1b; }
+  button, .btn { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  button:hover { border-color:#94a3b8; } button.pri { background:var(--acc); color:#fff; border-color:var(--acc); } button.danger { color:var(--bad); }
+  button.on { background:#fef3c7; border-color:#f59e0b; } button[disabled] { opacity:.5; cursor:default; }
+  input[type=number], input[type=text].sm { font:inherit; border:1px solid var(--line); border-radius:6px; padding:4px 6px; width:80px; }
+  .spacer { flex:1; }
+  main { flex:1; min-height:0; display:grid; grid-template-columns:380px 1fr; }
+  #side { overflow:auto; border-right:1px solid var(--line); background:var(--card); }
+  #map-wrap { position:relative; min-height:0; } #map { position:absolute; inset:0; }
+  .sect { padding:10px 12px; border-bottom:1px solid var(--line); }
+  .sect h3 { margin:0 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:4px 0; }
+  .hint { color:var(--muted); font-size:13px; }
+  .spot { display:flex; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .spot:hover { background:#f8fafc; } .spot.sel { background:#e0f2fe; }
+  .spot img { width:64px; height:48px; object-fit:cover; border-radius:6px; background:#cbd5e1; flex:none; }
+  .spot .t { font-weight:700; } .spot .m { color:var(--muted); font-size:12.5px; }
+  .tag { font-size:11.5px; border-radius:4px; padding:0 5px; margin-left:4px; } .tag.warn { background:#fef3c7; color:#92400e; } .tag.bad { background:#fee2e2; color:#991b1b; }
+  .reg { display:flex; align-items:center; gap:6px; padding:2px 0; } .reg span { flex:1; } .reg.hid span { color:var(--muted); text-decoration:line-through; }
+  .reg button { padding:1px 8px; font-size:12px; }
+  #banner { position:absolute; z-index:800; left:50%; top:10px; transform:translateX(-50%); background:#fff; border:2px solid var(--warn); border-radius:10px; padding:8px 14px; box-shadow:0 2px 10px rgba(0,0,0,.2); display:none; max-width:90%; text-align:center; }
+  .pin { width:28px; height:28px; border-radius:50%; background:#0369a1; color:#fff; font-weight:700; display:grid; place-items:center; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .pin.sel { background:#d97706; } .pin.bad { background:#6b7280; }
+  .leaflet-tooltip.pin-label { font-weight:700; }
+  /* Từ mức 20 trở lên ghim thu thành chấm nhỏ để không che vùng rác nằm sát bảng */
+  .map-hi .leaflet-marker-icon { pointer-events: none !important; }
+  .map-hi .pin { width: 12px; height: 12px; margin: 8px; font-size: 0; border-width: 2px; pointer-events: auto; }
+
+  #toast { position:fixed; z-index:2000; bottom:16px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; display:none; max-width:90%; }
+  #toast.err { background:var(--bad); }
+  #lb { position:fixed; inset:0; background:rgba(15,23,42,.88); z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:12px; color:#fff; }
+  #lb img { max-width:96vw; max-height:78vh; border-radius:8px; } #lb .cap { margin:8px 0; text-align:center; }
+  #exp { position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:2500; display:none; align-items:center; justify-content:center; }
+  #exp .box { background:#fff; border-radius:12px; padding:16px 18px; width:min(560px,94vw); max-height:90vh; overflow:auto; }
+  .bar { height:10px; background:var(--line); border-radius:6px; overflow:hidden; margin:8px 0; } .bar i { display:block; height:100%; width:0; background:var(--acc); }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; word-break:break-all; }
+  @media (max-width: 860px) { main { grid-template-columns:1fr; grid-template-rows:45% 55%; } #side { order:2; border-right:0; border-top:1px solid var(--line); } }
+</style>
+</head>
+<body>
+<header>
+  <input type="text" id="title" aria-label="Tiêu đề bản đồ" maxlength="100">
+  <div class="chips" id="chips"></div>
+  <span class="spacer"></span>
+  <label class="row hint" title="Hướng chụp chung: hướng cạnh TRÊN của tờ bảng (phía xa bạn khi bạn đứng sau bảng chữ), 0° = Bắc, 90° = Đông">Hướng chụp chung
+    <input type="number" id="az" min="0" max="359.9" step="1"> °
+    <button data-az="-5" title="Xoay -5°">⟲5</button><button data-az="-1" title="Xoay -1°">⟲1</button><button data-az="1" title="Xoay +1°">⟳1</button><button data-az="5" title="Xoay +5°">⟳5</button>
+  </label>
+  <label class="row hint"><input type="checkbox" id="foot" checked> Hiện vùng camera thấy</label>
+  <button id="b-folder" title="Nạp ảnh từ thư mục thu_muc_anh">Nạp ảnh từ thư mục</button>
+  <button id="b-export" class="pri">Xuất bản trình bày</button>
+</header>
+<main>
+  <div id="side">
+    <div class="sect" id="warns" style="display:none"></div>
+    <div class="sect" id="detail"></div>
+    <div class="sect"><h3>Đến toạ độ</h3>
+      <div class="row"><input type="text" id="goto" class="sm" style="width:100%" placeholder="Dán toạ độ, vd 10.7295, 106.6935"><button id="b-goto">Đến</button></div>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div id="map-wrap"><div id="map"></div><div id="banner"></div></div>
+</main>
+
+<div id="toast"></div>
+<div id="lb"><div class="cap" id="lb-cap"></div><img id="lb-img" alt=""><div class="row"><label><input type="checkbox" id="lb-ov" checked> Hiện vùng AI</label><button id="lb-x">Đóng</button></div></div>
+<div id="exp"><div class="box" id="exp-box"></div></div>
+<div id="gate" style="position:fixed;inset:0;background:#f1f5f9;z-index:4000;display:none;place-items:center"><div class="sect" style="background:#fff;border-radius:12px;max-width:340px"><h3>Mã truy cập</h3><div class="row"><input type="text" id="gate-in" class="sm" style="width:140px" inputmode="numeric" maxlength="6"><button class="pri" id="gate-ok">Vào</button></div><div class="hint">Mã 6 số in ra ở cửa sổ chạy máy chủ.</div></div></div>
+
+<script src="/web/vendor/leaflet/leaflet.js"></script>
+<script>
+(function () {
+'use strict';
+var R_EARTH = 6378137, RAD = Math.PI / 180;
+var S = { code: '', settings: {}, spots: [], summary: {}, sel: null, mode: null, draw: [], sig: '', busy: false };
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fmt(v, d) { return Number(v).toLocaleString('vi-VN', { maximumFractionDigits: d == null ? 2 : d }); }
+function toast(msg, err) { var t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = 'none'; }, err ? 6000 : 2500); }
+
+// ---- hệ toạ độ bảng <-> lat/lon (đúng công thức project_mask.marker_xy_to_enu / board_coords.latlon_to_board)
+function fwd(p, az, x, y) { var b = az * RAD, c = Math.cos(b), s = Math.sin(b), E = x * c + y * s, N = -x * s + y * c;
+  return [p.lat + N / R_EARTH / RAD, p.lon + E / (R_EARTH * Math.cos(p.lat * RAD)) / RAD]; }
+function inv(p, az, lat, lon) { var n = (lat - p.lat) * RAD * R_EARTH, e = (lon - p.lon) * RAD * R_EARTH * Math.cos(p.lat * RAD), b = az * RAD, c = Math.cos(b), s = Math.sin(b);
+  return [e * c - n * s, e * s + n * c]; }
+function effAz(s) { var a = s.placement && s.placement.az; return ((a == null ? S.settings.az_global : a) % 360 + 360) % 360; }
+function placed(s) { return s.placement && s.placement.lat != null; }
+function ringLL(s, ring) { var az = effAz(s); return ring.map(function (q) { return fwd(s.placement, az, q[0], q[1]); }); }
+function ringArea(r) { var a = 0; for (var i = 0; i < r.length; i++) { var j = (i + 1) % r.length; a += r[i][0] * r[j][1] - r[j][0] * r[i][1]; } return Math.abs(a) / 2; }
+function selSpot() { return S.spots.filter(function (s) { return s.id === S.sel; })[0] || null; }
+
+// ---- API
+function api(path, opts) {
+  opts = opts || {}; opts.headers = Object.assign({ 'X-Access-Code': S.code }, opts.headers || {});
+  if (opts.json !== undefined) { opts.method = opts.method || 'POST'; opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.json); delete opts.json; }
+  return fetch(path, opts).then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Máy chủ trả dữ liệu lạ.' }; }); })
+    .then(function (j) { if (j && j.error && !j.ok && /mã truy cập/i.test(j.error)) askCode(); return j; })
+    .catch(function () { return { ok: false, error: 'Không kết nối được máy chủ.' }; });
+}
+function applyState(j) { S.settings = j.settings; S.spots = j.spots; S.summary = j.summary; S.sig = JSON.stringify([j.settings, j.spots]); }
+function load(first) {
+  return api('/api/spots').then(function (j) {
+    if (!j.ok) { if (first) toast(j.error, true); return; }
+    var sig = JSON.stringify([j.settings, j.spots]);
+    if (!first && sig === S.sig) return;
+    if (S.mode === 'draw' || S.busy) { return; }
+    applyState(j);
+    if (first || !selSpot()) { var u = S.spots.filter(function (s) { return s.status === 'ok' && !placed(s); })[0]; S.sel = u ? u.id : (S.spots[0] && S.spots[0].id) || null; if (u && first) S.mode = 'place'; }
+    renderAll(first);
+  });
+}
+function afterEdit(j, okMsg) {
+  if (!j.ok) { toast(j.error, true); return j; }
+  if (j.spot) { for (var i = 0; i < S.spots.length; i++) if (S.spots[i].id === j.spot.id) S.spots[i] = j.spot; }
+  if (j.summary) S.summary = j.summary;
+  if (j.settings) { S.settings = j.settings; S.spots = j.spots; S.summary = j.summary; }
+  S.sig = JSON.stringify([S.settings, S.spots]);
+  if (okMsg) toast(okMsg);
+  renderAll(); return j;
+}
+function askCode() { $('gate').style.display = 'grid'; }
+$('gate-ok').onclick = function () { var v = $('gate-in').value.trim(); if (/^\d{6}$/.test(v)) { S.code = v; try { sessionStorage.setItem('svy_code', v); } catch (e) {} $('gate').style.display = 'none'; load(true); } };
+
+// ---- bản đồ
+var map = L.map('map', { maxZoom: 22, zoomControl: true, doubleClickZoom: true }).setView([10.7769, 106.7009], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', { subdomains: 'abc', maxZoom: 22, maxNativeZoom: 20,
+  attribution: '&copy; <a href="https://www.openstreetmap.fr" target="_blank" rel="noopener">OpenStreetMap France</a> | &copy; OpenStreetMap contributors' }).addTo(map);
+var layer = L.layerGroup().addTo(map), drawLayer = L.layerGroup().addTo(map);
+window.__svyMap = map;   // chỉ để kiểm thử tự động đọc toạ độ bản đồ
+var fitted = false;
+// Vùng rác thường nhỏ (vài chục cm): ở mức thu nhỏ chỉ là vài điểm ảnh. Vòng tròn "halo" (cỡ cố định theo pixel) chỉ để
+// nhìn thấy vị trí khi thu nhỏ; ẩn từ mức 21 trở lên, lúc đó đa giác vùng rác đã đủ lớn.
+var haloLayer = L.layerGroup();
+function addHalo(ring, color, onClick) {
+  var lat = 0, lon = 0; ring.forEach(function (q) { lat += q[0]; lon += q[1]; });
+  var c = L.circleMarker([lat / ring.length, lon / ring.length], { radius: 8, color: color, weight: 2, fillColor: color, fillOpacity: 0.12, interactive: !!onClick }).addTo(haloLayer);
+  if (onClick) c.on('click', onClick);
+}
+function syncHalo() { map.getContainer().classList.toggle('map-hi', map.getZoom() >= 20); var on = map.getZoom() <= 20; if (on && !map.hasLayer(haloLayer)) haloLayer.addTo(map); if (!on && map.hasLayer(haloLayer)) map.removeLayer(haloLayer); }
+map.on('zoomend', syncHalo);
+
+function renderMap(first) {
+  layer.clearLayers(); haloLayer.clearLayers(); syncHalo();
+  var interactive = S.mode === null;
+  var bounds = [];
+  S.spots.forEach(function (s) {
+    if (s.status !== 'ok' || !placed(s)) return;
+    var isSel = s.id === S.sel, p = s.placement, az = effAz(s);
+    bounds.push([p.lat, p.lon]);
+    if (isSel && $('foot').checked && s.footprint_m && s.footprint_m.length) L.polygon(ringLL(s, s.footprint_m), { color: '#0284c7', weight: 1, fillColor: '#38bdf8', fillOpacity: 0.12, interactive: false }).addTo(layer);
+    if (isSel && s.board_m && s.board_m.length) L.polygon(ringLL(s, s.board_m), { color: '#16a34a', weight: 2, fillOpacity: 0.3, interactive: false }).addTo(layer);
+    s.ai_regions.forEach(function (r) {
+      if (r.hidden && !isSel) return;
+      var rings = [ringLL(s, r.ring_m)].concat((r.holes_m || []).map(function (h) { return ringLL(s, h); }));
+      var poly = L.polygon(rings, r.hidden ? { color: '#6b7280', weight: 1.5, dashArray: '4 4', fill: false, interactive: interactive }
+        : { color: '#b91c1c', weight: 1.5, fillColor: '#ef4444', fillOpacity: 0.5, interactive: interactive }).addTo(layer);
+      var open = function (e) { L.DomEvent.stopPropagation(e); if (S.sel !== s.id) { S.sel = s.id; renderAll(); }
+        var box = document.createElement('div'); box.innerHTML = '<b>Vùng AI · ' + fmt(r.area_m2) + ' m²</b><div class="hint">' + esc(s.name) + '</div>';
+        var b = document.createElement('button'); b.textContent = r.hidden ? 'Hiện lại vùng này' : 'Ẩn vùng này (AI khoanh sai)'; b.onclick = function () { map.closePopup(); setHidden(s.id, r.id, !r.hidden); };
+        box.appendChild(b); L.popup().setLatLng(e.latlng).setContent(box).openOn(map); };
+      if (interactive) poly.on('click', open);
+      if (!r.hidden) addHalo(rings[0], '#dc2626', interactive ? open : null);
+    });
+    s.manual_regions.forEach(function (r) {
+      var ring = ringLL(s, r.ring_m);
+      var poly = L.polygon(ring, { color: '#b45309', weight: 2, dashArray: '6 4', fillColor: '#f59e0b', fillOpacity: 0.5, interactive: interactive }).addTo(layer);
+      var open = function (e) { L.DomEvent.stopPropagation(e);
+        var box = document.createElement('div'); box.innerHTML = '<b>Vùng vẽ tay · ' + fmt(r.area_m2) + ' m²</b><div class="hint">' + esc(s.name) + '</div>';
+        var b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Xoá vùng vẽ tay'; b.onclick = function () { map.closePopup(); delManual(s.id, r.id); };
+        box.appendChild(b); L.popup().setLatLng(e.latlng).setContent(box).openOn(map); };
+      if (interactive) poly.on('click', open);
+      addHalo(ring, '#b45309', interactive ? open : null);
+    });
+    var mk = L.marker([p.lat, p.lon], { draggable: isSel && S.mode === null, zIndexOffset: isSel ? 1000 : 0,
+      icon: L.divIcon({ className: '', html: '<div class="pin' + (isSel ? ' sel' : '') + '">' + s.seq + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(layer);
+    mk.bindTooltip(esc(s.name) + ' · ' + fmt(s.area_m2) + ' m²', { permanent: true, direction: 'top', offset: [0, -14], className: 'pin-label' });
+    mk.on('click', function () { if (S.mode === null) { S.sel = s.id; renderAll(); } });
+    mk.on('dragend', function () { var ll = mk.getLatLng(); savePlacement(s.id, { lat: ll.lat, lon: ll.lng, az: s.placement.az }); });
+  });
+  if (!fitted && bounds.length) { map.fitBounds(L.latLngBounds(bounds).pad(0.4), { maxZoom: 19 }); fitted = true; }
+  renderDraw();
+}
+function renderDraw() {
+  drawLayer.clearLayers();
+  var s = selSpot();
+  if (S.mode !== 'draw' || !s || !placed(s)) return;
+  var ll = S.draw.map(function (q) { return fwd(s.placement, effAz(s), q[0], q[1]); });
+  if (ll.length >= 3) L.polygon(ll, { color: '#b45309', weight: 2, dashArray: '6 4', fillColor: '#f59e0b', fillOpacity: 0.35, interactive: false }).addTo(drawLayer);
+  else if (ll.length === 2) L.polyline(ll, { color: '#b45309', weight: 2, interactive: false }).addTo(drawLayer);
+  ll.forEach(function (p) { L.circleMarker(p, { radius: 4, color: '#b45309', fillColor: '#fff', fillOpacity: 1, interactive: false }).addTo(drawLayer); });
+  updateBanner();
+}
+function updateBanner() {
+  var b = $('banner'), s = selSpot();
+  if (S.mode === 'place' && s) { b.style.display = 'block'; b.innerHTML = '<b>Bấm lên bản đồ nơi đặt bảng của ' + esc(s.name) + '</b> <button id="bn-x">Thôi</button>'; $('bn-x').onclick = function () { S.mode = null; renderAll(); }; }
+  else if (S.mode === 'draw' && s) { var area = S.draw.length >= 3 ? ringArea(S.draw) : 0;
+    b.style.display = 'block'; b.innerHTML = '<b>Vẽ vùng bị AI bỏ sót</b>: bấm các đỉnh quanh vùng rác · ' + S.draw.length + ' đỉnh · ' + fmt(area) + ' m² ' +
+      '<button id="bn-undo">Hoàn tác</button> <button id="bn-done" class="pri">Xong</button> <button id="bn-x">Huỷ</button>';
+    $('bn-undo').onclick = function () { S.draw.pop(); renderDraw(); }; $('bn-done').onclick = finishDraw; $('bn-x').onclick = cancelDraw; }
+  else b.style.display = 'none';
+}
+map.on('click', function (e) {
+  var s = selSpot();
+  if (S.mode === 'place' && s) {
+    var next = null;
+    savePlacement(s.id, { lat: e.latlng.lat, lon: e.latlng.lng, az: s.placement ? s.placement.az : null }, function () {
+      next = S.spots.filter(function (x) { return x.status === 'ok' && !placed(x) && x.id !== s.id; })[0];
+      if (next) { S.sel = next.id; } else { S.mode = null; }
+      renderAll();
+    });
+  } else if (S.mode === 'draw' && s && placed(s)) {
+    S.draw.push(inv(s.placement, effAz(s), e.latlng.lat, e.latlng.lng)); renderDraw();
+  }
+});
+function finishDraw() {
+  var s = selSpot(); if (!s) return;
+  if (S.draw.length < 3) { toast('Cần ít nhất 3 đỉnh.', true); return; }
+  api('/api/spots/' + s.id + '/manual', { json: { ring_m: S.draw } }).then(function (j) { if (j.ok) { S.mode = null; S.draw = []; afterEdit(j, 'Đã thêm vùng vẽ tay.'); } else toast(j.error, true); });
+}
+function cancelDraw() { S.mode = null; S.draw = []; map.doubleClickZoom.enable(); renderAll(); }
+document.addEventListener('keydown', function (e) {
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === 'Escape') { if (S.mode === 'draw') cancelDraw(); else if (S.mode) { S.mode = null; renderAll(); } }
+  if (e.key === 'Enter' && S.mode === 'draw') finishDraw();
+});
+
+// ---- thao tác
+function savePlacement(id, placement, cb) {
+  S.busy = true;
+  api('/api/spots/' + id, { json: { placement: placement } }).then(function (j) { S.busy = false; afterEdit(j); if (j.ok && cb) cb(); });
+}
+function setHidden(id, rid, hidden) { api('/api/spots/' + id + '/region/' + rid, { json: { hidden: hidden } }).then(function (j) { afterEdit(j); }); }
+function delManual(id, rid) { api('/api/spots/' + id + '/manual/' + rid, { method: 'DELETE' }).then(function (j) { afterEdit(j, 'Đã xoá vùng vẽ tay.'); }); }
+function delSpot(id) { var s = S.spots.filter(function (x) { return x.id === id; })[0]; if (!s || !confirm('Xoá ' + s.name + ' và ảnh của điểm này?')) return;
+  api('/api/spots/' + id, { method: 'DELETE' }).then(function (j) { if (!j.ok) return toast(j.error, true); S.spots = S.spots.filter(function (x) { return x.id !== id; }); S.summary = j.summary; if (S.sel === id) S.sel = S.spots[0] ? S.spots[0].id : null; S.sig = JSON.stringify([S.settings, S.spots]); renderAll(); }); }
+function patch(id, body, okMsg) { return api('/api/spots/' + id, { json: body }).then(function (j) { return afterEdit(j, okMsg); }); }
+function setGlobal(body) { return api('/api/settings', { json: body }).then(function (j) { if (!j.ok) return toast(j.error, true); applyState(j); renderAll(); }); }
+
+// ---- giao diện
+function renderChips() {
+  var m = S.summary || {}, c = [];
+  c.push('<span class="chip">' + (m.n_spots || 0) + ' điểm trên bản đồ</span>');
+  c.push('<span class="chip">Tổng ' + fmt(m.area_m2 || 0) + ' m²</span>');
+  c.push('<span class="chip">' + (m.n_ai_regions || 0) + ' vùng AI' + (m.n_manual_regions ? ' + ' + m.n_manual_regions + ' vẽ tay (' + fmt(m.area_manual_m2) + ' m²)' : '') + '</span>');
+  if (m.n_unplaced) c.push('<span class="chip warn">' + m.n_unplaced + ' chưa đặt vị trí</span>');
+  if (m.n_failed) c.push('<span class="chip bad">' + m.n_failed + ' ảnh lỗi</span>');
+  $('chips').innerHTML = c.join('');
+  var w = [];
+  (m.overlaps || []).forEach(function (o) { w.push('⚠ ' + esc(o.a_name) + ' và ' + esc(o.b_name) + ' có vùng rác chồng nhau ≈ ' + fmt(o.m2) + ' m² (có thể bị tính hai lần).'); });
+  $('warns').style.display = w.length ? 'block' : 'none'; $('warns').innerHTML = w.map(function (x) { return '<div class="hint" style="color:var(--warn)">' + x + '</div>'; }).join('');
+}
+function renderList() {
+  $('list').innerHTML = S.spots.slice().sort(function (a, b) { return a.seq - b.seq; }).map(function (s) {
+    var tags = '';
+    if (s.status !== 'ok') tags += '<span class="tag bad">lỗi</span>'; else if (!placed(s)) tags += '<span class="tag warn">chưa đặt vị trí</span>'; if (!s.include) tags += '<span class="tag warn">không đưa vào trình bày</span>';
+    return '<div class="spot' + (s.id === S.sel ? ' sel' : '') + '" data-id="' + s.id + '"><img alt="" src="/api/spots/' + s.id + '/image?kind=thumb&code=' + encodeURIComponent(S.code) + '">' +
+      '<div><div class="t">' + esc(s.name) + tags + '</div><div class="m">' + (s.status === 'ok' ? fmt(s.area_m2) + ' m² · ' + (s.ai_regions.filter(function (r) { return !r.hidden; }).length) + ' AI' + (s.manual_regions.length ? ' + ' + s.manual_regions.length + ' vẽ tay' : '') : esc(s.error)) + '</div><div class="m">' + esc((s.captured_local || '').replace('T', ' ').slice(0, 16)) + '</div></div></div>';
+  }).join('') || '<div class="sect hint">Chưa có ảnh nào. Chụp bằng điện thoại (trang /phone) hoặc bấm "Nạp ảnh từ thư mục".</div>';
+  Array.prototype.forEach.call($('list').querySelectorAll('.spot'), function (el) { el.onclick = function () { S.sel = el.getAttribute('data-id'); var s = selSpot();
+    if (S.mode === 'draw') { S.mode = null; S.draw = []; } if (s && s.status === 'ok' && !placed(s)) S.mode = 'place'; else if (S.mode === 'place') S.mode = null;
+    renderAll(); if (s && placed(s)) map.panTo([s.placement.lat, s.placement.lon]); }; });
+}
+function renderDetail() {
+  var s = selSpot(), d = $('detail');
+  if (!s) { d.innerHTML = '<h3>Điểm đang chọn</h3><div class="hint">Chưa có điểm nào.</div>'; return; }
+  var h = '<h3>Điểm đang chọn</h3><div class="row"><input type="text" id="d-name" value="' + esc(s.name) + '" maxlength="60" style="flex:1;font-weight:700;font-size:15px;border:1px solid var(--line);border-radius:6px;padding:4px 6px"></div>';
+  if (s.status !== 'ok') {
+    h += '<div class="row" style="color:var(--bad)">' + esc(s.error) + '</div><div class="row"><button id="d-img">Xem ảnh</button><button id="d-re">Chạy lại</button><button class="danger" id="d-del">Xoá</button></div>';
+  } else {
+    h += '<div class="row"><button id="d-place" class="' + (S.mode === 'place' ? 'on' : '') + '">' + (placed(s) ? 'Đổi vị trí' : 'Đặt vị trí') + '</button>' +
+      '<button id="d-draw" ' + (placed(s) ? '' : 'disabled') + ' class="' + (S.mode === 'draw' ? 'on' : '') + '">Vẽ thêm vùng</button><button id="d-img">Xem ảnh</button></div>';
+    var own = s.placement && s.placement.az != null;
+    h += '<div class="row hint"><label><input type="checkbox" id="d-own" ' + (own ? 'checked' : '') + '> Hướng riêng</label>' +
+      '<input type="number" id="d-az" min="0" max="359.9" step="1" value="' + (Math.round(effAz(s) * 10) / 10) + '" ' + (own ? '' : 'disabled') + '> °' +
+      '<button data-saz="-1" ' + (own ? '' : 'disabled') + '>⟲1</button><button data-saz="1" ' + (own ? '' : 'disabled') + '>⟳1</button>' + (own ? '' : '<span>(đang dùng hướng chung)</span>') + '</div>';
+    h += '<div class="row hint"><label><input type="checkbox" id="d-inc" ' + (s.include ? 'checked' : '') + '> Đưa vào bản trình bày</label></div>';
+    h += '<div class="hint">' + (s.captured_local || '').replace('T', ' ').slice(0, 16) + (s.time_source === 'exif' ? ' (giờ trong ảnh)' : ' (giờ nhận ảnh)') + ' · bảng ' + fmt(s.side_px_min, 0) + ' px · góc nhìn ' + fmt(s.fov_deg, 0) + '° (' + (s.fov_source === 'exif' ? 'từ ảnh' : 'mặc định') + ')</div>';
+    (s.warnings || []).forEach(function (w) { h += '<div class="hint" style="color:var(--warn)">⚠ ' + esc(w) + '</div>'; });
+    h += '<h3 style="margin-top:10px">Vùng rác</h3>';
+    s.ai_regions.forEach(function (r) { h += '<div class="reg' + (r.hidden ? ' hid' : '') + '"><span>AI ' + esc(r.id) + ' · ' + fmt(r.area_m2) + ' m²</span><button data-hide="' + r.id + '" data-to="' + (r.hidden ? 0 : 1) + '">' + (r.hidden ? 'Hiện lại' : 'Ẩn') + '</button></div>'; });
+    s.manual_regions.forEach(function (r) { h += '<div class="reg"><span>Vẽ tay ' + esc(r.id) + ' · ' + fmt(r.area_m2) + ' m²</span><button class="danger" data-delm="' + r.id + '">Xoá</button></div>'; });
+    if (!s.ai_regions.length && !s.manual_regions.length) h += '<div class="hint">AI không khoanh vùng nào. Nếu thấy rác, dùng "Vẽ thêm vùng".</div>';
+    h += '<div class="row" style="margin-top:8px"><button id="d-re">Chạy lại AI</button><button class="danger" id="d-del">Xoá điểm</button></div>';
+  }
+  d.innerHTML = h;
+  var q = function (id) { return $(id); };
+  q('d-name').onchange = function () { var v = this.value.trim(); if (v) patch(s.id, { name: v }); else this.value = s.name; };
+  if (q('d-img')) q('d-img').onclick = function () { openLightbox(s); };
+  if (q('d-del')) q('d-del').onclick = function () { delSpot(s.id); };
+  if (q('d-re')) q('d-re').onclick = function () { if (!confirm('Chạy lại AI sẽ bỏ các vùng đã ẩn và vùng vẽ tay của điểm này. Tiếp tục?')) return;
+    toast('Đang chạy lại AI…'); api('/api/spots/' + s.id + '/reprocess', { method: 'POST' }).then(function (j) { afterEdit(j, 'Đã chạy lại.'); }); };
+  if (s.status !== 'ok') return;
+  q('d-place').onclick = function () { S.mode = S.mode === 'place' ? null : 'place'; S.draw = []; renderAll(); };
+  q('d-draw').onclick = function () { if (S.mode === 'draw') { cancelDraw(); return; } S.mode = 'draw'; S.draw = []; renderAll(); };
+  q('d-inc').onchange = function () { patch(s.id, { include: this.checked }); };
+  q('d-own').onchange = function () { var p = s.placement || {}; if (!p.lat) { toast('Hãy đặt vị trí trước.', true); this.checked = false; return; }
+    patch(s.id, { placement: { lat: p.lat, lon: p.lon, az: this.checked ? effAz(s) : null } }); };
+  q('d-az').onchange = function () { var p = s.placement; if (p) patch(s.id, { placement: { lat: p.lat, lon: p.lon, az: Number(this.value) } }); };
+  Array.prototype.forEach.call(d.querySelectorAll('[data-saz]'), function (b) { b.onclick = function () { var p = s.placement; patch(s.id, { placement: { lat: p.lat, lon: p.lon, az: (effAz(s) + Number(b.getAttribute('data-saz')) + 360) % 360 } }); }; });
+  Array.prototype.forEach.call(d.querySelectorAll('[data-hide]'), function (b) { b.onclick = function () { setHidden(s.id, b.getAttribute('data-hide'), b.getAttribute('data-to') === '1'); }; });
+  Array.prototype.forEach.call(d.querySelectorAll('[data-delm]'), function (b) { b.onclick = function () { delManual(s.id, b.getAttribute('data-delm')); }; });
+}
+function renderAll(first) {
+  var ae = document.activeElement; var keep = ae && ae.id === 'title';
+  $('title').value = keep ? $('title').value : (S.settings.title || '');
+  $('az').value = Math.round((S.settings.az_global || 0) * 10) / 10;
+  renderChips(); renderList(); renderDetail(); renderMap(first); updateBanner();
+  map.getContainer().style.cursor = (S.mode === 'place' || S.mode === 'draw') ? 'crosshair' : '';
+  if (S.mode === 'draw') map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
+}
+
+// ---- ảnh bằng chứng
+function openLightbox(s) {
+  var img = $('lb-img'), ov = $('lb-ov');
+  var set = function () { img.src = '/api/spots/' + s.id + '/image?kind=' + (ov.checked && s.status === 'ok' ? 'overlay' : 'full') + '&code=' + encodeURIComponent(S.code); };
+  ov.onchange = set; ov.parentNode.style.display = s.status === 'ok' ? '' : 'none'; set();
+  $('lb-cap').textContent = s.name + ' · ' + (s.captured_local || '').replace('T', ' ').slice(0, 16) + (s.time_source === 'exif' ? ' (giờ ghi trong ảnh)' : ' (giờ nhận ảnh)');
+  $('lb').style.display = 'flex';
+}
+$('lb-x').onclick = function () { $('lb').style.display = 'none'; };
+$('lb').onclick = function (e) { if (e.target === $('lb')) $('lb').style.display = 'none'; };
+
+// ---- header
+$('title').onchange = function () { var v = this.value.trim(); if (v) setGlobal({ title: v }); };
+$('az').onchange = function () { setGlobal({ az_global: Number(this.value) }); };
+Array.prototype.forEach.call(document.querySelectorAll('[data-az]'), function (b) { b.onclick = function () { setGlobal({ az_global: ((S.settings.az_global || 0) + Number(b.getAttribute('data-az')) + 360) % 360 }); }; });
+$('foot').onchange = function () { renderMap(); };
+$('b-goto').onclick = function () { var m = $('goto').value.match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/); if (!m) return toast('Nhập dạng: 10.7295, 106.6935', true);
+  var lat = +m[1], lon = +m[2]; if (Math.abs(lat) > 85 || Math.abs(lon) > 180) return toast('Toạ độ không hợp lệ.', true); map.setView([lat, lon], 19); };
+$('goto').onkeydown = function (e) { if (e.key === 'Enter') $('b-goto').click(); };
+$('b-folder').onclick = function () { var b = this; b.disabled = true; toast('Đang nạp ảnh từ thư mục…'); api('/api/import-folder', { method: 'POST' }).then(function (j) { b.disabled = false;
+  if (!j.ok) return toast(j.error, true);
+  toast('Tìm thấy ' + j.found + ' ảnh: nạp mới ' + j.added + ', đã có ' + j.skipped_already_loaded + (j.failed.length ? ', lỗi ' + j.failed.length + ' (' + j.failed[0].file + ': ' + j.failed[0].error + ')' : ''), j.failed.length > 0);
+  S.busy = false; load(false); }); };
+
+// ---- xuất
+var expTimer = null;
+function renderExport(st) {
+  var box = $('exp-box'), h = '<h3 style="margin:0 0 8px">Xuất bản trình bày</h3>';
+  if (!st || st.state === 'idle' || st.state === 'error') {
+    if (st && st.state === 'error') h += '<div style="color:var(--bad);margin-bottom:8px">' + esc(st.message) + '</div>';
+    h += '<div class="hint">Tạo thư mục mở bằng cách bấm đúp, không cần mạng và không cần máy chủ này. Gồm bản đồ, vùng rác, tên điểm, số liệu và ảnh bằng chứng (đã bỏ GPS).</div>' +
+      '<div class="row"><label><input type="checkbox" id="x-tiles" checked> Tải bản đồ nền về máy (cần Internet, vài trăm ô, tải chậm từng ô)</label></div>' +
+      '<div class="hint">Bỏ chọn nếu không có mạng: bản trình bày vẫn mở được nhưng không có bản đồ nền (chỉ vùng rác, trừ khi lúc trình bày có mạng).</div>' +
+      '<div class="row"><button class="pri" id="x-go">Bắt đầu xuất</button><button id="x-x">Đóng</button></div>';
+  } else if (st.state === 'running') {
+    var pct = st.total ? Math.round(st.done / st.total * 100) : 0;
+    h += '<div>' + esc(st.step) + (st.total ? ': ' + st.done + '/' + st.total + ' ô' : '…') + '</div><div class="bar"><i style="width:' + pct + '%"></i></div><div class="hint">Đừng tắt máy chủ. Tải chậm để không làm quá tải máy chủ bản đồ.</div>';
+  } else if (st.state === 'done') {
+    var t = st.tiles || {};
+    h += '<div style="color:var(--ok);font-weight:700">Xong: ' + st.n_spots + ' điểm.</div>' +
+      '<div class="row">Mở file: <code>' + esc(st.index) + '</code></div><div class="row">Bản nén (để chép sang máy khác): <code>' + esc(st.zip) + '</code></div>' +
+      (t.have ? '<div class="hint">Bản đồ nền: ' + t.got + '/' + t.wanted + ' ô (zoom ' + t.min + '–' + t.max + ')' + (t.failed ? ', <b style="color:var(--bad)">' + t.failed + ' ô tải lỗi</b>: có ô trống khi phóng to, hãy xuất lại khi mạng ổn' : '') + '.</div>'
+        : '<div class="hint" style="color:var(--warn)">Chưa có bản đồ nền offline (không tải hoặc tải lỗi hết).</div>') +
+      '<div class="hint">Trước khi trình bày: mở thử file index.html, ngắt mạng và kiểm tra bản đồ vẫn hiện.</div><div class="row"><button id="x-x">Đóng</button></div>';
+  }
+  box.innerHTML = h;
+  if ($('x-x')) $('x-x').onclick = function () { $('exp').style.display = 'none'; clearInterval(expTimer); };
+  if ($('x-go')) $('x-go').onclick = function () { api('/api/export/start', { json: { with_tiles: $('x-tiles').checked } }).then(function (j) { if (!j.ok) return toast(j.error, true); poll(); }); };
+}
+function poll() { clearInterval(expTimer); var tick = function () { api('/api/export/status').then(function (j) { if (!j.ok) return; renderExport(j.status); if (j.status.state !== 'running') clearInterval(expTimer); }); }; tick(); expTimer = setInterval(tick, 1200); }
+$('b-export').onclick = function () { $('exp').style.display = 'flex'; api('/api/export/status').then(function (j) { var st = j.ok ? j.status : null; renderExport(st && st.state === 'done' ? { state: 'idle' } : st); if (st && st.state === 'running') poll(); }); };
+
+// ---- khởi động
+(function () {
+  var c = (location.hash || '').replace(/^#/, '').trim();
+  try { if (c) sessionStorage.setItem('svy_code', c); else c = sessionStorage.getItem('svy_code') || ''; } catch (e) {}
+  S.code = c;
+  if (!/^\d{6}$/.test(c)) { askCode(); } else load(true);
+  setInterval(function () { if (S.code && document.visibilityState === 'visible') load(false); }, 4000);
+})();
+})();
+</script>
+</body>
+</html>

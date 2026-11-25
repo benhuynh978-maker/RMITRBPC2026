@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bản đồ rác khu vực trường</title>
+<link rel="stylesheet" href="leaflet/leaflet.css">
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <h1 id="title"></h1>
+    <div id="totals"></div>
+    <div id="legend">
+      <span><i class="sw ai"></i> Vùng rác do AI khoanh (vòng tròn nhỏ chỉ để dễ thấy khi thu nhỏ)</span>
+      <span id="lg-manual"><i class="sw manual"></i> Vùng vẽ tay</span>
+    </div>
+    <label class="opt"><input type="checkbox" id="foot"> Hiện vùng camera nhìn thấy</label>
+    <div id="spots"></div>
+    <div id="notes"></div>
+  </aside>
+  <div id="map"></div>
+</div>
+<div id="lb" hidden>
+  <button id="lb-x" aria-label="Đóng">✕</button>
+  <div id="lb-cap"></div>
+  <img id="lb-img" alt="">
+  <label class="opt"><input type="checkbox" id="lb-ov" checked> Hiện vùng AI</label>
+</div>
+<script src="data.js"></script>
+<script src="leaflet/leaflet.js"></script>
+<script src="viewer.js"></script>
+</body>
+</html>
